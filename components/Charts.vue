@@ -70,7 +70,7 @@
                 >
                     <span
                         class="w-2 h-2 rounded-sm flex-shrink-0"
-                        :style="`background: ${statusColors[status as string] || '#555'}`"
+                        :style="`background: ${getStatusColor(status as string)}`"
                     ></span>
                     <span class="text-obsidian-400 truncate">{{ status }}</span>
                     <span class="text-white font-mono ml-auto">{{
@@ -146,6 +146,13 @@ let lineChart: Chart | null = null;
 let valueChart: Chart | null = null;
 
 const statusColors: Record<string, string> = {
+    vendido: "#74b9ff",
+    fabricacion: "#c8ff47",
+    despacho: "#e17055",
+    instalacion: "#00cec9",
+    vendidoInstalacion: "#55efc4",
+    terminado: "#00b894",
+    facturado: "#a29bfe",
     Programado: "#74b9ff",
     Aprobado: "#c8ff47",
     Instalado: "#00b894",
@@ -157,6 +164,24 @@ const statusColors: Record<string, string> = {
     "En instalaciÃ³n": "#00cec9",
     "En instalación": "#00cec9",
 };
+
+const getStatusKey = (status: string) => {
+    const value = status.toLowerCase();
+
+    if (value.includes("vendido") && value.includes("instal"))
+        return "vendidoInstalacion";
+    if (value.includes("vendido")) return "vendido";
+    if (value.includes("fabricaci")) return "fabricacion";
+    if (value.includes("despacho")) return "despacho";
+    if (value.includes("instal")) return "instalacion";
+    if (value.includes("terminado")) return "terminado";
+    if (value.includes("facturado")) return "facturado";
+
+    return status;
+};
+
+const getStatusColor = (status: string) =>
+    statusColors[getStatusKey(status)] || "#555";
 
 const sortedResponsibles = computed(() =>
     Object.fromEntries(
@@ -244,7 +269,7 @@ const updateCharts = () => {
         pieChart.data.labels = labels;
         pieChart.data.datasets[0].data = Object.values(props.byStatus);
         pieChart.data.datasets[0].backgroundColor = labels.map(
-            (s) => statusColors[s] || "#555",
+            (s) => getStatusColor(s),
         );
         pieChart.update();
     }
@@ -287,7 +312,7 @@ onMounted(() => {
                     {
                         data: Object.values(props.byStatus),
                         backgroundColor: labels.map(
-                            (s) => statusColors[s] || "#555",
+                            (s) => getStatusColor(s),
                         ),
                         borderColor: "#0a0a0d",
                         borderWidth: 2,
