@@ -206,7 +206,11 @@
                         <div
                             v-for="project in paginatedProjects"
                             :key="project.id"
-                            class="p-4 hover:bg-white/[0.02] transition-colors"
+                            class="p-4 hover:bg-white/[0.02] transition-colors cursor-pointer"
+                            role="button"
+                            tabindex="0"
+                            @click="openInfo(project)"
+                            @keydown.enter="openInfo(project)"
                         >
                             <div class="flex items-start justify-between gap-2 mb-2">
                                 <p class="font-body text-white text-sm font-medium leading-snug flex-1">
@@ -233,7 +237,13 @@
                             <!-- actions -->
                             <div class="flex flex-wrap gap-2 mt-3">
                                 <button
-                                    @click="openNotes(project)"
+                                    @click.stop="openInfo(project)"
+                                    class="btn-ghost text-xs h-7 px-3"
+                                >
+                                    Info
+                                </button>
+                                <button
+                                    @click.stop="openNotes(project)"
                                     class="btn-ghost text-xs h-7 px-3 flex items-center gap-1.5"
                                 >
                                     <svg
@@ -253,11 +263,11 @@
                                     </svg>
                                     <span>Notas</span>
                                 </button>
-                                <button @click="openEdit(project)" class="btn-ghost text-xs h-7 px-3">
+                                <button @click.stop="openEdit(project)" class="btn-ghost text-xs h-7 px-3">
                                     Editar
                                 </button>
                                 <button
-                                    @click="confirmDelete(project)"
+                                    @click.stop="confirmDelete(project)"
                                     class="text-xs h-7 px-3 rounded-lg border border-coral-400/20 text-coral-400 hover:border-coral-400/40 transition-colors"
                                 >
                                     Eliminar
@@ -316,7 +326,11 @@
                                 <tr
                                     v-for="project in paginatedProjects"
                                     :key="project.id"
-                                    class="group hover:bg-white/[0.02] transition-colors"
+                                    class="group hover:bg-white/[0.02] transition-colors cursor-pointer"
+                                    role="button"
+                                    tabindex="0"
+                                    @click="openInfo(project)"
+                                    @keydown.enter="openInfo(project)"
                                 >
                                     <td class="px-4 py-3.5">
                                         <p
@@ -366,7 +380,7 @@
                                                     : 'Sin notas registradas'
                                             "
                                             aria-label="Ver notas"
-                                            @click="openNotes(project)"
+                                            @click.stop="openNotes(project)"
                                         >
                                             <svg
                                                 aria-hidden="true"
@@ -394,14 +408,14 @@
                                             class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity"
                                         >
                                             <button
-                                                @click="openEdit(project)"
+                                                @click.stop="openEdit(project)"
                                                 class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/5 text-obsidian-400 hover:text-white transition-colors text-sm"
                                                 title="Editar"
                                             >
                                                 ✎
                                             </button>
                                             <button
-                                                @click="confirmDelete(project)"
+                                                @click.stop="confirmDelete(project)"
                                                 class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-coral-400/10 text-obsidian-500 hover:text-coral-400 transition-colors text-sm"
                                                 title="Eliminar"
                                             >
@@ -510,6 +524,11 @@
             @save="handleNotesSave"
         />
 
+        <ProjectInfoModal
+            v-model="showInfoModal"
+            :project="infoProject"
+        />
+
         <!-- Delete Confirmation -->
         <Teleport to="body">
             <Transition name="modal">
@@ -567,9 +586,11 @@ const {
 // State
 const showModal = ref(false);
 const showNotesModal = ref(false);
+const showInfoModal = ref(false);
 const editingProject = ref<Project | null>(null);
 const deletingProject = ref<Project | null>(null);
 const notesProject = ref<Project | null>(null);
+const infoProject = ref<Project | null>(null);
 
 // Filters
 const searchQuery = ref("");
@@ -752,6 +773,11 @@ const openEdit = (project: Project) => {
 const openNotes = (project: Project) => {
     notesProject.value = project;
     showNotesModal.value = true;
+};
+
+const openInfo = (project: Project) => {
+    infoProject.value = project;
+    showInfoModal.value = true;
 };
 
 const confirmDelete = (project: Project) => {
