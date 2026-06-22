@@ -48,6 +48,26 @@
             </div>
 
             <p v-if="sub" class="text-obsidian-500 text-xs mt-2">{{ sub }}</p>
+
+            <div v-if="progress !== undefined" class="mt-4 space-y-2">
+                <div class="flex items-center justify-between gap-3">
+                    <span class="text-[10px] font-mono uppercase tracking-wider text-obsidian-500">
+                        {{ progressLabel || "Progreso" }}
+                    </span>
+                    <span
+                        class="text-xs font-mono tabular-nums"
+                        :style="`color: ${accentColor}`"
+                    >
+                        {{ progressPercent }}%
+                    </span>
+                </div>
+                <div class="h-2 rounded-full bg-obsidian-800 overflow-hidden">
+                    <div
+                        class="h-full rounded-full transition-all duration-700 ease-out"
+                        :style="`width: ${progressWidth}%; background: linear-gradient(90deg, ${accentColor}, ${accentColor}99)`"
+                    ></div>
+                </div>
+            </div>
         </div>
     </div>
 </template>
@@ -64,10 +84,22 @@ const props = defineProps<{
     sub?: string;
     flat?: boolean;
     valueFormatter?: (value: number) => string;
+    progress?: number;
+    progressLabel?: string;
 }>();
 
 const displayValue = ref(0);
 let animationFrame: number | null = null;
+
+const normalizedProgress = computed(() => {
+    if (props.progress === undefined || !Number.isFinite(props.progress))
+        return 0;
+    return Math.max(0, props.progress);
+});
+
+const progressWidth = computed(() => Math.min(normalizedProgress.value, 100));
+
+const progressPercent = computed(() => Math.round(normalizedProgress.value));
 
 const renderedValue = computed(() =>
     props.valueFormatter ? props.valueFormatter(displayValue.value) : displayValue.value,

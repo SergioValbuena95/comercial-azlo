@@ -73,7 +73,7 @@
                         :value="stats.total"
                         icon="📋"
                         accent-color="#c8ff47"
-                        :sub="`${stats.byCountry ? Object.keys(stats.byCountry).length : 0} países`"
+                        :sub="`${totalCities} ciudades`"
                     />
                     <StatCard
                         label="Proyectos Activos"
@@ -117,10 +117,13 @@
                     />
                     <StatCard
                         label="Meta mensual"
-                        :value="stats.completed"
+                        :value="MONTHLY_GOAL"
                         icon="🎯"
                         accent-color="#00b894"
-                        :sub="`${percent(stats.completed, stats.total)}% completados`"
+                        :value-formatter="formatCurrency"
+                        :sub="`${formatCurrency(stats.totalSoldCurrentMonth)} vendidos este mes`"
+                        :progress="monthlyGoalProgress"
+                        progress-label="Cumplimiento"
                     />
                     <StatCard
                         label="EMPTY"
@@ -627,6 +630,18 @@ const currentMonthLabel = computed(() =>
         month: "long",
         year: "numeric",
     }),
+);
+const MONTHLY_GOAL = 186833333;
+const monthlyGoalProgress = computed(() =>
+    percent(stats.value.totalSoldCurrentMonth, MONTHLY_GOAL),
+);
+const totalCities = computed(
+    () =>
+        new Set(
+            projects.value
+                .map((project) => project.ciudad)
+                .filter(Boolean),
+        ).size,
 );
 
 const allStatuses = computed(() =>
