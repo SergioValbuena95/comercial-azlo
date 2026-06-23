@@ -12,9 +12,9 @@ module.exports = {
     theme: {
         extend: {
             fontFamily: {
-                display: ["Syne", "sans-serif"],
-                mono: ["Space Mono", "monospace"],
-                body: ["Inter", "sans-serif"],
+                display: ["Montserrat", "sans-serif"],
+                mono: ["Montserrat", "sans-serif"],
+                body: ["Montserrat", "sans-serif"],
             },
             colors: {
                 obsidian: {

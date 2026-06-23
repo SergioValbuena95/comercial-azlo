@@ -150,11 +150,11 @@
                     <StatCard
                         class="col-span-2 lg:col-span-1"
                         label="Total Vendido"
-                        :value="YEARLY_GOAL"
+                        :value="stats.totalSoldCurrentYear"
                         icon="💰"
                         accent-color="#005571"
                         :value-formatter="formatCurrency"
-                        :sub="`${formatCurrency(stats.totalSoldCurrentYear)} vendidos en ${currentYear}`"
+                        :sub="`Meta anual: ${formatCurrency(YEARLY_GOAL)}`"
                         :progress="yearlyGoalProgress"
                         progress-label="Cumplimiento"
                     />
@@ -169,11 +169,11 @@
                     <StatCard
                         class="col-span-2 lg:col-span-1"
                         label="Venta mensual"
-                        :value="MONTHLY_GOAL"
+                        :value="stats.totalSoldCurrentMonth"
                         icon="🎯"
                         accent-color="#00b894"
                         :value-formatter="formatCurrency"
-                        :sub="`${formatCurrency(stats.totalSoldCurrentMonth)} vendidos este mes`"
+                        :sub="`Meta mensual: ${formatCurrency(MONTHLY_GOAL)}`"
                         :progress="monthlyGoalProgress"
                         progress-label="Cumplimiento"
                     />

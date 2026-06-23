@@ -300,7 +300,7 @@ const updateCharts = () => {
 };
 
 onMounted(() => {
-    Chart.defaults.font = { family: "'Space Mono', monospace" };
+    Chart.defaults.font = { family: "'Montserrat', sans-serif" };
     Chart.defaults.color = "#696980";
 
     if (pieRef.value) {
