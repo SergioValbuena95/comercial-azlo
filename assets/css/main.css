@@ -8,11 +8,21 @@
     --bg-card: #15151a;
     --bg-card-hover: #1e1e26;
     --border-color: rgba(255, 255, 255, 0.07);
-    --accent: #c8ff47;
-    --accent-dim: rgba(200, 255, 71, 0.15);
+    --accent: #005571;
+    --accent-dim: rgba(0, 85, 113, 0.15);
     --text-primary: #f0f0f2;
     --text-secondary: #696980;
     scrollbar-color: #3f3f4d #0a0a0d;
+}
+
+:root.theme-light {
+    --bg-primary: #f4f7f8;
+    --bg-card: #ffffff;
+    --bg-card-hover: #eef4f6;
+    --border-color: rgba(0, 85, 113, 0.14);
+    --text-primary: #10232c;
+    --text-secondary: #60737c;
+    scrollbar-color: #b8c9cf #f4f7f8;
 }
 
 * {
@@ -38,12 +48,21 @@ body {
 ::-webkit-scrollbar-track {
     background: #0a0a0d;
 }
+:root.theme-light ::-webkit-scrollbar-track {
+    background: #f4f7f8;
+}
 ::-webkit-scrollbar-thumb {
     background: #3f3f4d;
     border-radius: 3px;
 }
+:root.theme-light ::-webkit-scrollbar-thumb {
+    background: #b8c9cf;
+}
 ::-webkit-scrollbar-thumb:hover {
     background: #696980;
+}
+:root.theme-light ::-webkit-scrollbar-thumb:hover {
+    background: #8da5ad;
 }
 
 @layer components {
@@ -72,8 +91,14 @@ body {
     }
 
     .btn-primary {
-        @apply bg-acid-400 text-obsidian-950 font-display font-bold px-5 py-2.5 rounded-xl
+        @apply bg-acid-400 text-white font-display font-bold px-5 py-2.5 rounded-xl
            hover:bg-acid-300 transition-all duration-200 active:scale-95 text-sm;
+    }
+
+    .theme-toggle {
+        @apply h-9 w-9 flex items-center justify-center rounded-xl border border-white/10
+           text-obsidian-300 hover:text-white hover:border-white/20 hover:bg-white/5
+           transition-all duration-200;
     }
 
     .btn-ghost {
@@ -144,4 +169,101 @@ body {
 .animate-on-scroll.is-visible {
     opacity: 1;
     transform: translateY(0);
+}
+
+:root.theme-light .bg-obsidian-950,
+:root.theme-light .bg-obsidian-900,
+:root.theme-light .bg-obsidian-800 {
+    background-color: var(--bg-primary) !important;
+}
+
+:root.theme-light .bg-obsidian-950\/80 {
+    background-color: rgba(244, 247, 248, 0.88) !important;
+}
+
+:root.theme-light .glass-card {
+    background-color: var(--bg-card) !important;
+    border-color: var(--border-color) !important;
+    box-shadow: 0 16px 36px rgba(0, 85, 113, 0.08);
+}
+
+:root.theme-light .glass-card-hover:hover {
+    background-color: var(--bg-card-hover) !important;
+    border-color: rgba(0, 85, 113, 0.22) !important;
+    box-shadow: 0 18px 38px rgba(0, 85, 113, 0.12);
+}
+
+:root.theme-light [class*="border-white"] {
+    border-color: rgba(0, 85, 113, 0.14) !important;
+}
+
+:root.theme-light [class*="divide-white"] > :not([hidden]) ~ :not([hidden]) {
+    border-color: rgba(0, 85, 113, 0.1) !important;
+}
+
+:root.theme-light [class*="bg-white/"] {
+    background-color: rgba(0, 85, 113, 0.04) !important;
+}
+
+:root.theme-light .text-white,
+:root.theme-light .section-title,
+:root.theme-light .stat-number {
+    color: var(--text-primary) !important;
+}
+
+:root.theme-light .text-obsidian-200,
+:root.theme-light .text-obsidian-300,
+:root.theme-light .text-obsidian-400 {
+    color: #506872 !important;
+}
+
+:root.theme-light .text-obsidian-500,
+:root.theme-light .text-obsidian-600 {
+    color: var(--text-secondary) !important;
+}
+
+:root.theme-light .text-obsidian-950 {
+    color: #ffffff !important;
+}
+
+:root.theme-light .btn-ghost,
+:root.theme-light .theme-toggle {
+    border-color: rgba(0, 85, 113, 0.16) !important;
+    color: #375762 !important;
+}
+
+:root.theme-light .btn-primary,
+:root.theme-light .btn-primary * {
+    color: #ffffff !important;
+}
+
+:root.theme-light .btn-ghost:hover,
+:root.theme-light .theme-toggle:hover {
+    background-color: rgba(0, 85, 113, 0.06) !important;
+    border-color: rgba(0, 85, 113, 0.26) !important;
+    color: #10232c !important;
+}
+
+:root.theme-light .input-dark {
+    background-color: #ffffff !important;
+    border-color: rgba(0, 85, 113, 0.18) !important;
+    color: #10232c !important;
+}
+
+:root.theme-light .input-dark::placeholder {
+    color: #8da5ad !important;
+}
+
+:root.theme-light .noise-bg::before {
+    opacity: 0.018;
+}
+
+:root.theme-light .hover\:bg-white\/\[0\.02\]:hover,
+:root.theme-light .hover\:bg-white\/5:hover {
+    background-color: rgba(0, 85, 113, 0.05) !important;
+}
+
+:root.theme-light .bg-obsidian-800,
+:root.theme-light .bg-obsidian-700\/60 {
+    background-color: #e7eff2 !important;
 }

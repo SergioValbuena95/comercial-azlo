@@ -84,10 +84,10 @@
                                     placeholder="Dirección del proyecto"
                                 />
                             </div>
-                            <!-- Fecha Creación * -->
+                            <!-- Fecha Solicitud * -->
                             <div>
                                 <label class="block text-xs font-mono text-obsidian-400 uppercase tracking-wider mb-1.5" >
-                                    Fecha Creación *
+                                    Fecha Solicitud *
                                 </label>
                                 <input
                                     v-model="form.fechaCreacion"
@@ -98,7 +98,7 @@
                             <!-- Dias acordados -->
                             <div>
                                 <label class="block text-xs font-mono text-obsidian-400 uppercase tracking-wider mb-1.5">
-                                    Dias acordados
+                                    Dias acordados *
                                 </label>
                                 <input
                                     v-model.number="form.diasAcordados"
@@ -245,7 +245,7 @@ const estados = [
     "Fabricación",
     "Despacho",
     "Instalacion",
-    "Terminado",
+    "Instalado",
     "Facturado",
 ];
 
@@ -258,10 +258,10 @@ const defaultForm = () => ({
     fechaDespacho: "",
     fechaInstalacion: "",
     diasAcordados: null as number | null,
-    encargado: "",
-    estado: "Prospecto",
+    encargado: "Tatiana Ortega",
+    estado: "Vendido",
     valorTotal: null as number | null,
-    porcentajesPago: "",
+    porcentajesPago: "50%, 30%, 20%",
     notas: "",
 });
 
@@ -285,18 +285,17 @@ const addDays = (dateValue: string, days: number) => {
 };
 
 watch(
-    () => [form.fechaDespacho, form.fechaCreacion, form.diasAcordados] as const,
-    ([fechaDespacho, fechaCreacion, diasAcordados]) => {
-        const baseDate = fechaDespacho || fechaCreacion;
+    () => [form.fechaCreacion, form.diasAcordados] as const,
+    ([fechaCreacion, diasAcordados]) => {
         if (
-            !baseDate ||
+            !fechaCreacion ||
             typeof diasAcordados !== "number" ||
             !Number.isFinite(diasAcordados) ||
             diasAcordados < 0
         ) {
             return;
         }
-        form.fechaInstalacion = addDays(baseDate, diasAcordados);
+        form.fechaInstalacion = addDays(fechaCreacion, diasAcordados);
     },
 );
 
@@ -305,13 +304,18 @@ const isValid = computed(
         form.proyecto &&
         form.ciudad &&
         form.fechaCreacion &&
-        form.encargado,
+        form.encargado &&
+        typeof form.diasAcordados === "number" &&
+        Number.isFinite(form.diasAcordados) &&
+        form.diasAcordados >= 0,
 );
 
 const handleSubmit = () => {
     if (!isValid.value) return;
+    const { id: _id, ...projectData } = form as typeof form & { id?: string };
+
     emit("save", {
-        ...form,
+        ...projectData,
         diasAcordados:
             typeof form.diasAcordados === "number"
                 ? form.diasAcordados

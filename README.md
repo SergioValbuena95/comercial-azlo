@@ -115,7 +115,7 @@ comercial-dashboard/
 | ------------ | --------- | ---------------------- |
 | Obsidian 950 | `#0a0a0d` | Fondo principal        |
 | Obsidian 900 | `#15151a` | Cards                  |
-| Acid 400     | `#c8ff47` | Acento principal, CTAs |
+| Acid 400     | `#005571` | Acento principal, CTAs |
 | Blue 400     | `#74b9ff` | Estado Programado      |
 | Emerald 400  | `#00b894` | Estado Instalado       |
 | Purple 400   | `#a29bfe` | Estado Entregado       |

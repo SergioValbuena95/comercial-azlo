@@ -19,8 +19,9 @@ const statusKey = computed(() => {
     if (value.includes("vendido")) return "vendido";
     if (value.includes("fabricaci")) return "fabricacion";
     if (value.includes("despacho")) return "despacho";
+    if (value.includes("instalado")) return "instalado";
     if (value.includes("instal")) return "instalacion";
-    if (value.includes("terminado")) return "terminado";
+    if (value.includes("terminado")) return "instalado";
     if (value.includes("facturado")) return "facturado";
 
     return props.estado;
@@ -38,7 +39,7 @@ const badgeClass = computed(() => {
             "label-badge bg-cyan-500/15 text-cyan-400 border border-cyan-500/20",
         vendidoInstalacion:
             "label-badge bg-teal-500/15 text-teal-300 border border-teal-500/20",
-        terminado:
+        instalado:
             "label-badge bg-emerald-500/15 text-emerald-400 border border-emerald-500/20",
         facturado:
             "label-badge bg-purple-500/15 text-purple-300 border border-purple-500/20",
@@ -71,7 +72,7 @@ const dotClass = computed(() => {
         despacho: "bg-orange-400",
         instalacion: "bg-cyan-400",
         vendidoInstalacion: "bg-teal-300",
-        terminado: "bg-emerald-400",
+        instalado: "bg-emerald-400",
         facturado: "bg-purple-400",
         Programado: "bg-blue-400",
         Aprobado: "bg-acid-400",

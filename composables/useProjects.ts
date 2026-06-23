@@ -13,6 +13,7 @@ export interface Project {
     estado: string;
     valorTotal?: number | null;
     porcentajesPago?: string;
+    pagosRealizados?: number[];
     notas?: string;
 }
 
@@ -77,6 +78,11 @@ const normalizeProject = (project: Project): Project => ({
     porcentajesPago: "",
     notas: "",
     ...project,
+    pagosRealizados: Array.isArray(project.pagosRealizados)
+        ? project.pagosRealizados
+              .map(Number)
+              .filter((value) => Number.isInteger(value) && value >= 0)
+        : [],
 });
 
 export function useProjects() {
@@ -174,6 +180,14 @@ export function useProjects() {
     };
 
     const updateProject = async (id: string, data: Partial<Project>) => {
+        const idx = projects.value.findIndex((p) => p.id === id);
+        if (idx !== -1) {
+            projects.value[idx] = normalizeProject({
+                ...projects.value[idx],
+                ...data,
+            });
+        }
+
         try {
             const { $db, $firebase } = useNuxtApp() as any;
             if ($db && $firebase && useFirebase.value) {
@@ -181,13 +195,6 @@ export function useProjects() {
                     $firebase.doc($db, "projects", id),
                     data,
                 );
-            } else {
-                const idx = projects.value.findIndex((p) => p.id === id);
-                if (idx !== -1)
-                    projects.value[idx] = normalizeProject({
-                        ...projects.value[idx],
-                        ...data,
-                    });
             }
         } catch (e) {
             console.error(e);
@@ -221,9 +228,10 @@ export function useProjects() {
             {} as Record<string, number>,
         );
 
-        const byCountry = projects.value.reduce(
+        const byCity = projects.value.reduce(
             (acc, p) => {
-                acc[p.pais] = (acc[p.pais] || 0) + 1;
+                const city = p.ciudad || "Sin ciudad";
+                acc[city] = (acc[city] || 0) + 1;
                 return acc;
             },
             {} as Record<string, number>,
@@ -263,18 +271,20 @@ export function useProjects() {
             return sum + Number(p.valorTotal || 0);
         }, 0);
 
-        const active =
-            (byStatus["Programado"] || 0) +
-            (byStatus["Aprobado"] || 0) +
-            (byStatus["En instalación"] || 0) +
-            (byStatus["Instalado"] || 0);
-        const completed = byStatus["Entregado"] || 0;
-        const closed = byStatus["Cerrado"] || 0;
+        const active = projects.value.filter(
+            (p) => p.estado.trim().toLowerCase() !== "facturado",
+        ).length;
+        const completed = projects.value.filter(
+            (p) => p.estado.trim().toLowerCase() === "instalado",
+        ).length;
+        const closed = projects.value.filter(
+            (p) => p.estado.trim().toLowerCase() === "facturado",
+        ).length;
 
         return {
             total,
             byStatus,
-            byCountry,
+            byCity,
             byResponsible,
             byMonth,
             valueByMonth,

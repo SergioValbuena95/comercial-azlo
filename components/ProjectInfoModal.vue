@@ -8,22 +8,13 @@
                 @click.self="$emit('update:modelValue', false)"
             >
                 <div class="absolute inset-0 bg-black/70 backdrop-blur-sm"></div>
-
-                <div
-                    class="relative z-10 w-full max-w-2xl glass-card border-white/10 shadow-2xl"
-                >
-                    <div
-                        class="flex items-start justify-between gap-4 p-6 border-b border-white/[0.07]"
-                    >
+                <div class="relative z-10 w-full max-w-2xl glass-card border-white/10 shadow-2xl">
+                    <div class="flex items-start justify-between gap-4 p-6 border-b border-white/[0.07]">
                         <div class="min-w-0">
-                            <p
-                                class="text-xs font-mono uppercase tracking-wider text-obsidian-500 mb-1"
-                            >
+                            <p class="text-xs font-mono uppercase tracking-wider text-obsidian-500 mb-1">
                                 Informacion del proyecto
                             </p>
-                            <h2
-                                class="font-display font-bold text-white text-lg leading-tight truncate"
-                            >
+                            <h2 class="font-display font-bold text-white text-lg leading-tight truncate">
                                 {{ project.proyecto || "Proyecto sin nombre" }}
                             </h2>
                         </div>
@@ -40,20 +31,18 @@
                     <div class="p-6 max-h-[72vh] overflow-y-auto space-y-6">
                         <div class="flex flex-wrap items-center gap-3">
                             <StatusBadge :estado="project.estado" />
-                            <span
-                                class="text-xs font-mono text-obsidian-500 border border-white/10 rounded-lg px-2.5 py-1"
-                            >
+                            <span class="text-xs font-mono text-obsidian-500 border border-white/10 rounded-lg px-2.5 py-1">
                                 {{ project.encargado || "Sin encargado" }}
                             </span>
                         </div>
 
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div class="grid grid-cols-2 gap-3">
                             <InfoItem label="Pais" :value="project.pais" />
                             <InfoItem label="Ciudad" :value="project.ciudad" />
                             <InfoItem
                                 label="Direccion"
                                 :value="project.direccion"
-                                class="sm:col-span-2"
+                                class="col-span-2"
                             />
                             <InfoItem
                                 label="Fecha creacion"

@@ -79,9 +79,9 @@
                 </div>
             </div>
         </div>
-        <!-- Proyectos por Pais -->
+        <!-- Proyectos por Ciudad -->
         <div class="glass-card p-6">
-            <h3 class="section-title text-base mb-1">Proyectos por Pais</h3>
+            <h3 class="section-title text-base mb-1">Proyectos por Ciudad</h3>
             <p class="text-obsidian-500 text-xs font-mono mb-6">
                 Presencia regional
             </p>
@@ -112,7 +112,7 @@
                     >
                         <div
                             class="h-full rounded-full transition-all duration-1000 ease-out"
-                            :style="`width: ${(count / maxResponsible) * 100}%; background: linear-gradient(90deg, #c8ff47, #74b9ff)`"
+                            :style="`width: ${(count / maxResponsible) * 100}%; background: linear-gradient(90deg, #005571, #74b9ff)`"
                         ></div>
                     </div>
                 </div>
@@ -128,7 +128,7 @@ Chart.register(...registerables);
 
 const props = defineProps<{
     byStatus: Record<string, number>;
-    byCountry: Record<string, number>;
+    byCity: Record<string, number>;
     byMonth: Record<string, number>;
     valueByMonth: Record<string, number>;
     byResponsible: Record<string, number>;
@@ -147,14 +147,14 @@ let valueChart: Chart | null = null;
 
 const statusColors: Record<string, string> = {
     vendido: "#74b9ff",
-    fabricacion: "#c8ff47",
+    fabricacion: "#005571",
     despacho: "#e17055",
     instalacion: "#00cec9",
     vendidoInstalacion: "#55efc4",
-    terminado: "#00b894",
+    instalado: "#00b894",
     facturado: "#a29bfe",
     Programado: "#74b9ff",
-    Aprobado: "#c8ff47",
+    Aprobado: "#005571",
     Instalado: "#00b894",
     Entregado: "#a29bfe",
     Cerrado: "#636e72",
@@ -173,8 +173,9 @@ const getStatusKey = (status: string) => {
     if (value.includes("vendido")) return "vendido";
     if (value.includes("fabricaci")) return "fabricacion";
     if (value.includes("despacho")) return "despacho";
+    if (value.includes("instalado")) return "instalado";
     if (value.includes("instal")) return "instalacion";
-    if (value.includes("terminado")) return "terminado";
+    if (value.includes("terminado")) return "instalado";
     if (value.includes("facturado")) return "facturado";
 
     return status;
@@ -275,7 +276,7 @@ const updateCharts = () => {
     }
 
     if (barChart) {
-        const sorted = Object.entries(props.byCountry).sort(
+        const sorted = Object.entries(props.byCity).sort(
             ([, a], [, b]) => b - a,
         );
         barChart.data.labels = sorted.map(([k]) => k);
@@ -347,7 +348,7 @@ onMounted(() => {
     }
 
     if (barRef.value) {
-        const sorted = Object.entries(props.byCountry).sort(
+        const sorted = Object.entries(props.byCity).sort(
             ([, a], [, b]) => b - a,
         );
         barChart = new Chart(barRef.value, {
@@ -387,12 +388,12 @@ onMounted(() => {
                     {
                         label: "Proyectos",
                         data: months.map(([, v]) => v),
-                        borderColor: "#c8ff47",
+                        borderColor: "#005571",
                         backgroundColor: "rgba(200,255,71,0.07)",
                         borderWidth: 2,
                         fill: true,
                         tension: 0.4,
-                        pointBackgroundColor: "#c8ff47",
+                        pointBackgroundColor: "#005571",
                         pointRadius: 4,
                         pointHoverRadius: 6,
                     },
@@ -502,7 +503,7 @@ watch(selectedValueYear, () => {
 watch(
     () => [
         props.byStatus,
-        props.byCountry,
+        props.byCity,
         props.byMonth,
         props.valueByMonth,
         selectedValueYear.value,
