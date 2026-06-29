@@ -141,8 +141,12 @@
                                     class="input-dark"
                                 >
                                     <option value="">Seleccionar...</option>
-                                    <option v-for="e in encargados" :key="e">
-                                        {{ e }}
+                                    <option
+                                        v-for="assignee in assigneeOptions"
+                                        :key="assignee.value"
+                                        :value="assignee.value"
+                                    >
+                                        {{ assignee.label }}
                                     </option>
                                 </select>
                             </div>
@@ -225,6 +229,7 @@
 
 <script setup lang="ts">
 import type { Project } from "~/composables/useProjects";
+import type { AppUser } from "~/composables/useUsers";
 
 const props = defineProps<{
     modelValue: boolean;
@@ -236,10 +241,11 @@ const emit = defineEmits<{
     save: [project: Omit<Project, "id">];
 }>();
 
+const { user, initAuth } = useAuth();
+const { users, currentUserProfile, loadUsers, loadCurrentUserProfile } =
+    useUsers();
+
 const paises = ["Colombia"];
-const encargados = [
-    "Tatiana Ortega",
-];
 const estados = [
     "Vendido",
     "Fabricación",
@@ -258,7 +264,7 @@ const defaultForm = () => ({
     fechaDespacho: "",
     fechaInstalacion: "",
     diasAcordados: null as number | null,
-    encargado: "Tatiana Ortega",
+    encargado: user.value?.uid || "",
     estado: "Vendido",
     valorTotal: null as number | null,
     porcentajesPago: "50%, 30%, 20%",
@@ -266,6 +272,12 @@ const defaultForm = () => ({
 });
 
 const form = reactive(defaultForm());
+
+onMounted(async () => {
+    await initAuth();
+    loadCurrentUserProfile();
+    loadUsers();
+});
 
 watch(
     () => props.project,
@@ -298,6 +310,64 @@ watch(
         form.fechaInstalacion = addDays(fechaCreacion, diasAcordados);
     },
 );
+
+watch(
+    () => [props.modelValue, props.project, user.value?.uid] as const,
+    ([isOpen, project, uid]) => {
+        if (!isOpen || project || form.encargado || !uid) return;
+        form.encargado = uid;
+    },
+);
+
+const roleName = computed(() =>
+    (currentUserProfile.value?.roleName || "").trim().toLowerCase(),
+);
+
+const canAssignAnyUser = computed(() =>
+    ["admin", "superadmin", "super admin"].includes(roleName.value),
+);
+
+const userDisplayName = (appUser: Pick<AppUser, "displayName" | "email">) =>
+    appUser.displayName || appUser.email || "Usuario sin nombre";
+
+const currentUserOption = computed(() => {
+    if (!user.value) return null;
+
+    return {
+        value: user.value.uid,
+        label:
+            currentUserProfile.value?.displayName ||
+            user.value.displayName ||
+            user.value.email ||
+            "Usuario actual",
+    };
+});
+
+const assigneeOptions = computed(() => {
+    const options = canAssignAnyUser.value
+        ? users.value.map((appUser) => ({
+              value: appUser.uid,
+              label: userDisplayName(appUser),
+          }))
+        : currentUserOption.value
+          ? [currentUserOption.value]
+          : [];
+
+    if (
+        form.encargado &&
+        !options.some((option) => option.value === form.encargado)
+    ) {
+        return [
+            ...options,
+            {
+                value: form.encargado,
+                label: "Usuario asignado",
+            },
+        ];
+    }
+
+    return options;
+});
 
 const isValid = computed(
     () =>

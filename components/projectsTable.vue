@@ -52,7 +52,23 @@
                 </button>
             </div>
         </div>
-
+         <div class="flex flex-wrap items-center gap-2 mb-4">
+            <button
+                v-for="tab in projectTabsMain"
+                :key="tab.key"
+                type="button"
+                class="h-9 px-3 rounded-lg border text-xs font-medium transition-colors"
+                :class="
+                    activeProjectTab === tab.key
+                        ? 'border-acid-400/40 bg-acid-400/10 text-acid-400'
+                        : 'border-white/10 text-obsidian-400 hover:text-white hover:border-white/20'
+                "
+                @click="activeProjectTab = tab.key"
+            >
+                {{ tab.label }}
+                <span class="ml-1 text-obsidian-500">{{ tab.count }}</span>
+            </button>
+        </div>
         <div class="flex flex-wrap items-center gap-2 mb-4">
             <button
                 v-for="tab in projectTabs"
@@ -475,6 +491,16 @@ const projectTabs = computed(() => {
     ];
 });
 
+const projectTabsMain = computed(() => {
+    const billedCount = props.projects.filter(isBilledProject).length;
+    const activeCount = props.projects.length - billedCount;
+
+    return [
+        { key: "active" as const, label: "En tramite", count: activeCount },
+        { key: "billed" as const, label: "Vendidos", count: billedCount },
+    ];
+});
+
 const hasFilters = computed(
     () =>
         props.searchQuery ||
@@ -585,7 +611,7 @@ const setSort = (key: string) => {
 
 const sortValue = (project: Project, key: string) => {
     if (key === "valorTotal") return Number(project.valorTotal || 0);
-    return String((project as Record<string, unknown>)[key] || "");
+    return String((project as unknown as Record<string, unknown>)[key] || "");
 };
 
 const localPaidPayments = ref<Record<string, number[]>>({});

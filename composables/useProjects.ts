@@ -15,6 +15,12 @@ export interface Project {
     porcentajesPago?: string;
     pagosRealizados?: number[];
     notas?: string;
+    created_by?: unknown;
+    createdByRef?: unknown;
+    createdByUid?: string;
+    createdByEmail?: string;
+    createdByName?: string;
+    createdAt?: string;
 }
 
 // Seed data from CSV
@@ -77,6 +83,10 @@ const normalizeProject = (project: Project): Project => ({
     valorTotal: null,
     porcentajesPago: "",
     notas: "",
+    createdByUid: "",
+    createdByEmail: "",
+    createdByName: "",
+    createdAt: "",
     ...project,
     pagosRealizados: Array.isArray(project.pagosRealizados)
         ? project.pagosRealizados
@@ -92,18 +102,25 @@ export function useProjects() {
     const useFirebase = ref(false);
     let unsubscribeProjects: (() => void) | null = null;
 
-    // Try to load from Firebase, fallback to seed data
+    // Load only projects created by the current Firebase user.
     const loadProjects = async () => {
         loading.value = true;
         error.value = null;
 
         try {
             const { $db, $firebase } = useNuxtApp() as any;
+            const { user, initAuth } = useAuth();
+            await initAuth();
 
-            if ($db && $firebase) {
+            if ($db && $firebase && user.value) {
+                const currentUserRef = $firebase.doc(
+                    $db,
+                    "users",
+                    user.value.uid,
+                );
                 const q = $firebase.query(
                     $firebase.collection($db, "projects"),
-                    $firebase.orderBy("fechaCreacion", "desc"),
+                    $firebase.where("created_by", "==", currentUserRef),
                 );
 
                 // Use onSnapshot for real-time updates
@@ -111,35 +128,31 @@ export function useProjects() {
                 unsubscribeProjects = $firebase.onSnapshot(
                     q,
                     (snapshot: any) => {
-                        if (snapshot.empty) {
-                            // Seed data to Firebase on first load
-                            seedToFirebase($db, $firebase);
-                        } else {
-                            projects.value = snapshot.docs
-                                .map((doc: any) => ({
-                                    id: doc.id,
-                                    ...doc.data(),
-                                }))
-                                .map(normalizeProject);
-                            useFirebase.value = true;
-                        }
+                        projects.value = snapshot.docs
+                            .map((doc: any) => ({
+                                id: doc.id,
+                                ...doc.data(),
+                            }))
+                            .map(normalizeProject);
+                        useFirebase.value = true;
                         loading.value = false;
                     },
                     (err: any) => {
-                        console.warn("Firebase error, using local data:", err);
-                        projects.value = SEED_DATA.map((p, i) =>
-                            normalizeProject({ ...p, id: String(i + 1) }),
-                        );
+                        console.error("Firebase projects error:", err);
+                        projects.value = [];
+                        error.value =
+                            "No se pudieron cargar los proyectos desde Firebase.";
                         loading.value = false;
                     },
                 );
             } else {
-                throw new Error("Firebase not available");
+                projects.value = [];
+                loading.value = false;
             }
-        } catch {
-            projects.value = SEED_DATA.map((p, i) =>
-                normalizeProject({ ...p, id: String(i + 1) }),
-            );
+        } catch (err) {
+            console.error("Projects load error:", err);
+            projects.value = [];
+            error.value = "No se pudieron cargar los proyectos.";
             loading.value = false;
         }
     };
@@ -164,14 +177,50 @@ export function useProjects() {
     const addProject = async (project: Omit<Project, "id">) => {
         try {
             const { $db, $firebase } = useNuxtApp() as any;
+            const { user, initAuth } = useAuth();
+            const { getUser } = useUsers();
+            await initAuth();
+
+            const currentUser = user.value;
+            const currentUserProfile = currentUser
+                ? await getUser(currentUser.uid)
+                : null;
+            const projectWithCreator = currentUser
+                  ? {
+                        ...project,
+                      encargado: project.encargado || currentUser.uid,
+                      created_by: $firebase.doc(
+                          $db,
+                          "users",
+                          currentUser.uid,
+                      ),
+                      createdByRef: $firebase.doc(
+                          $db,
+                          "users",
+                          currentUser.uid,
+                      ),
+                      createdByUid: currentUser.uid,
+                      createdByEmail: currentUser.email || "",
+                      createdByName:
+                          currentUserProfile?.displayName ||
+                          currentUser.displayName ||
+                          currentUser.email ||
+                          "",
+                      createdAt: new Date().toISOString(),
+                  }
+                : project;
+
             if ($db && $firebase && useFirebase.value) {
                 await $firebase.addDoc(
                     $firebase.collection($db, "projects"),
-                    project,
+                    projectWithCreator,
                 );
             } else {
                 projects.value.unshift(
-                    normalizeProject({ ...project, id: Date.now().toString() }),
+                    normalizeProject({
+                        ...projectWithCreator,
+                        id: Date.now().toString(),
+                    }),
                 );
             }
         } catch (e) {
