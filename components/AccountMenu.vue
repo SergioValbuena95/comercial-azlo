@@ -48,7 +48,7 @@
             </button>
             <NuxtLink
                 v-if="canManageUsers"
-                to="/users"
+                to="/settings/users"
                 class="flex w-full items-center gap-2 px-4 py-3 text-left text-sm text-obsidian-300 hover:bg-white/5 hover:text-white transition-colors"
                 role="menuitem"
                 @click="accountMenuOpen = false"
@@ -67,6 +67,26 @@
                     <path d="M16 3.13a4 4 0 0 1 0 7.75" />
                 </svg>
                 Usuarios
+            </NuxtLink>
+            <NuxtLink
+                v-if="canAccessSettings"
+                to="/settings"
+                class="flex w-full items-center gap-2 px-4 py-3 text-left text-sm text-obsidian-300 hover:bg-white/5 hover:text-white transition-colors"
+                role="menuitem"
+                @click="accountMenuOpen = false"
+            >
+                <svg
+                    aria-hidden="true"
+                    class="h-4 w-4"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                >
+                    <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.09a2 2 0 0 1-1-1.74v-.51a2 2 0 0 1 1-1.72l.15-.1a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2Z" />
+                    <circle cx="12" cy="12" r="3" />
+                </svg>
+                Configuracion
             </NuxtLink>
             <button
                 type="button"
@@ -218,6 +238,10 @@ const accountInitials = computed(() => {
 });
 
 const canManageUsers = computed(() =>
+    isAdminUser(currentUserProfile.value),
+);
+
+const canAccessSettings = computed(() =>
     isAdminUser(currentUserProfile.value),
 );
 

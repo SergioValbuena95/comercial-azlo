@@ -79,6 +79,9 @@ export function useUsers() {
         error.value = null;
 
         try {
+            const { initAuth } = useAuth();
+            await initAuth();
+
             const { $db, $firebase } = useNuxtApp() as any;
             const usersQuery = $firebase.query(
                 $firebase.collection($db, "users"),

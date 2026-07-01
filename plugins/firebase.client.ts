@@ -23,6 +23,7 @@ import {
     query,
     orderBy,
     where,
+    serverTimestamp,
 } from "firebase/firestore";
 
 export default defineNuxtPlugin((nuxtApp) => {
@@ -66,6 +67,7 @@ export default defineNuxtPlugin((nuxtApp) => {
                 query,
                 orderBy,
                 where,
+                serverTimestamp,
             },
         },
     };
