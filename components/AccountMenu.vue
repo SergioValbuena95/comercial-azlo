@@ -179,6 +179,7 @@ const {
     loadCurrentUserProfile,
     updateCurrentUserProfile,
 } = useUsers();
+const { isAdminUser } = useAccess();
 
 onMounted(() => {
     loadCurrentUserProfile();
@@ -216,12 +217,8 @@ const accountInitials = computed(() => {
     );
 });
 
-const roleName = computed(() =>
-    (currentUserProfile.value?.roleName || "").trim().toLowerCase(),
-);
-
 const canManageUsers = computed(() =>
-    ["admin", "superadmin", "super admin"].includes(roleName.value),
+    isAdminUser(currentUserProfile.value),
 );
 
 const closeAccountMenu = () => {

@@ -156,20 +156,13 @@ export function useProjects() {
             const { $db, $firebase } = useNuxtApp() as any;
             const { user, initAuth } = useAuth();
             const { getUser } = useUsers();
+            const { getIsAdminUser } = useAccess();
             await initAuth();
 
             if ($db && $firebase && user.value) {
                 const currentUserProfile = await getUser(user.value.uid);
-                const roleName = (
-                    currentUserProfile?.roleName || ""
-                )
-                    .trim()
-                    .toLowerCase();
-                const canSeeAllProjects = [
-                    "admin",
-                    "superadmin",
-                    "super admin",
-                ].includes(roleName);
+                const canSeeAllProjects =
+                    await getIsAdminUser(currentUserProfile);
                 const currentUserRef = $firebase.doc(
                     $db,
                     "users",

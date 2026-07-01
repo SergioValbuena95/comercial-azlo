@@ -29,15 +29,24 @@ const referenceId = (value: unknown) => {
     return "id" in value ? String((value as { id: string }).id) : "";
 };
 
+const roleIdValue = (value: unknown) => {
+    if (!value) return "";
+    if (typeof value === "string" || typeof value === "number")
+        return String(value);
+    return referenceId(value);
+};
+
 const normalizeUser = async (
     id: string,
     data: Record<string, unknown>,
     firebase: any,
 ): Promise<AppUser> => {
-    const roleReference = (data.roleRef || data.role_id) as
+    const rawRole = data.roleRef || data.role_id || data.roleId;
+    const roleReference = rawRole as
         | DocumentReference
         | undefined;
-    const roleSnapshot = roleReference
+    const roleSnapshot =
+        roleReference && typeof roleReference === "object"
         ? await firebase.getDoc(roleReference)
         : null;
     const roleData =
@@ -50,7 +59,7 @@ const normalizeUser = async (
         uid: String(data.uid || id),
         email: String(data.email || ""),
         displayName: String(data.displayName || data.name || ""),
-        roleId: String(data.roleId || referenceId(roleReference)),
+        roleId: roleIdValue(rawRole),
         roleName: String(data.roleName || roleData?.name || ""),
         rolePath: referencePath(roleReference),
         status: String(data.status || "active"),

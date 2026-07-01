@@ -31,6 +31,7 @@
                 </select>
 
                 <select
+                    v-if="canFilterByResponsible"
                     v-model="filterResponsible"
                     class="input-dark h-9 w-auto text-xs"
                 >
@@ -448,7 +449,13 @@ const emit = defineEmits<{
     "payment-toggle": [project: Project, paidPayments: number[]];
 }>();
 
-const { users, loadUsers } = useUsers();
+const {
+    users,
+    currentUserProfile,
+    loadUsers,
+    loadCurrentUserProfile,
+} = useUsers();
+const { isAdminUser } = useAccess();
 
 const filterStatus = ref("");
 const filterCountry = ref("");
@@ -482,12 +489,21 @@ const allCountries = computed(() =>
 );
 
 const allResponsibles = computed(() =>
-    [...new Set(props.projects.map((project) => responsibleName(project.encargado)))].sort(),
+    users.value
+        .filter((appUser) => appUser.roleId === "3")
+        .map((appUser) => responsibleName(appUser.uid))
+        .filter(Boolean)
+        .sort(),
 );
 
 onMounted(() => {
     loadUsers();
+    loadCurrentUserProfile();
 });
+
+const canFilterByResponsible = computed(() =>
+    isAdminUser(currentUserProfile.value),
+);
 
 const responsibleName = (uid?: string) => {
     if (!uid) return "";
@@ -530,7 +546,7 @@ const hasFilters = computed(
         props.searchQuery ||
         filterStatus.value ||
         filterCountry.value ||
-        filterResponsible.value ||
+        (canFilterByResponsible.value && filterResponsible.value) ||
         activeProjectTabMain.value !== "all" ||
         activeProjectTab.value !== "all",
 );
@@ -563,7 +579,7 @@ const filteredProjects = computed(() => {
         );
     if (filterCountry.value)
         list = list.filter((project) => project.pais === filterCountry.value);
-    if (filterResponsible.value)
+    if (canFilterByResponsible.value && filterResponsible.value)
         list = list.filter(
             (project) =>
                 responsibleName(project.encargado) === filterResponsible.value,

@@ -202,6 +202,7 @@
         <ProjectInfoModal
             v-model="showInfoModal"
             :project="infoProject"
+            @edit="openEditFromInfo"
         />
 
         <!-- Delete Confirmation -->
@@ -342,6 +343,12 @@ const openNotes = (project: Project) => {
 const openInfo = (project: Project) => {
     infoProject.value = project;
     showInfoModal.value = true;
+};
+
+const openEditFromInfo = (project: Project) => {
+    showInfoModal.value = false;
+    infoProject.value = null;
+    openEdit(project);
 };
 
 const confirmDelete = (project: Project) => {

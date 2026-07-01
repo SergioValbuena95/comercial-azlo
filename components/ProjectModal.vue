@@ -114,7 +114,7 @@
                             <!-- Dias acordados -->
                             <div>
                                 <label class="block text-xs font-mono text-obsidian-400 uppercase tracking-wider mb-1.5">
-                                    Dias acordados *
+                                    Dias acordados
                                 </label>
                                 <input
                                     v-model.number="form.diasAcordados"
@@ -267,6 +267,7 @@ const {
     loadUsers,
     loadCurrentUserProfile
 } = useUsers();
+const { isAdminUser } = useAccess();
 
 const paises = ["Colombia"];
 const estados = [
@@ -346,12 +347,8 @@ watch(
     },
 );
 
-const roleName = computed(() =>
-    (currentUserProfile.value?.roleName || "").trim().toLowerCase(),
-);
-
 const canAssignAnyUser = computed(() =>
-    ["admin", "superadmin", "super admin"].includes(roleName.value),
+    isAdminUser(currentUserProfile.value),
 );
 
 const canManageProjectState = computed(() => canAssignAnyUser.value);
@@ -404,10 +401,7 @@ const isValid = computed(
         form.ciudad &&
         form.fechaCreacion &&
         form.encargado &&
-        form.sub_state &&
-        typeof form.diasAcordados === "number" &&
-        Number.isFinite(form.diasAcordados) &&
-        form.diasAcordados >= 0,
+        form.sub_state,
 );
 
 const handleSubmit = () => {

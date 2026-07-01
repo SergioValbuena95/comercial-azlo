@@ -18,14 +18,38 @@
                                 {{ project.proyecto || "Proyecto sin nombre" }}
                             </h2>
                         </div>
-                        <button
-                            type="button"
-                            class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/5 text-obsidian-400 hover:text-white transition-colors text-lg"
-                            aria-label="Cerrar informacion"
-                            @click="$emit('update:modelValue', false)"
-                        >
-                            x
-                        </button>
+                        <div class="flex items-center gap-2">
+                            <button
+                                type="button"
+                                class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/5 text-obsidian-400 hover:text-white transition-colors"
+                                aria-label="Editar proyecto"
+                                title="Editar proyecto"
+                                @click="emitEdit"
+                            >
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    stroke-width="2"
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    class="w-4 h-4"
+                                    aria-hidden="true"
+                                >
+                                    <path d="M12 20h9" />
+                                    <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
+                                </svg>
+                            </button>
+                            <button
+                                type="button"
+                                class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/5 text-obsidian-400 hover:text-white transition-colors text-lg"
+                                aria-label="Cerrar informacion"
+                                @click="$emit('update:modelValue', false)"
+                            >
+                                x
+                            </button>
+                        </div>
                     </div>
 
                     <div class="p-6 max-h-[72vh] overflow-y-auto space-y-6">
@@ -104,13 +128,14 @@
 <script setup lang="ts">
 import { projectSubState, type Project } from "~/composables/useProjects";
 
-defineProps<{
+const props = defineProps<{
     modelValue: boolean;
     project?: Project | null;
 }>();
 
-defineEmits<{
+const emit = defineEmits<{
     "update:modelValue": [value: boolean];
+    edit: [project: Project];
 }>();
 
 const { users, loadUsers } = useUsers();
@@ -123,6 +148,11 @@ const responsibleName = (uid?: string) => {
     if (!uid) return "";
     const appUser = users.value.find((user) => user.uid === uid);
     return appUser?.displayName || appUser?.email || uid;
+};
+
+const emitEdit = () => {
+    if (!props.project) return;
+    emit("edit", props.project);
 };
 
 const formatDate = (value?: string) => {
