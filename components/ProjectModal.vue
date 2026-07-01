@@ -40,6 +40,22 @@
                     <!-- Form -->
                     <div class="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
                         <div class="grid grid-cols-2 gap-4">
+                            <div v-if="canManageProjectState" class="col-span-2">
+                                <label class="block text-xs font-mono text-obsidian-400 uppercase tracking-wider mb-1.5">
+                                    Estado general *
+                                </label>
+                                <select
+                                    v-model.number="form.estado"
+                                    class="input-dark"
+                                >
+                                    <option :value="PROJECT_STATES.IN_PROGRESS.id">
+                                        En tramite
+                                    </option>
+                                    <option :value="PROJECT_STATES.SOLD.id">
+                                        Vendidos
+                                    </option>
+                                </select>
+                            </div>
                             <div class="col-span-2">
                                 <label class="block text-xs font-mono text-obsidian-400 uppercase tracking-wider mb-1.5">
                                     Proyecto *
@@ -156,7 +172,7 @@
                                     Estado *
                                 </label>
                                 <select
-                                    v-model="form.estado"
+                                    v-model="form.sub_state"
                                     class="input-dark"
                                 >
                                     <option value="">Seleccionar...</option>
@@ -228,7 +244,10 @@
 </template>
 
 <script setup lang="ts">
-import type { Project } from "~/composables/useProjects";
+import {
+    PROJECT_STATES,
+    type Project,
+} from "~/composables/useProjects";
 import type { AppUser } from "~/composables/useUsers";
 
 const props = defineProps<{
@@ -242,8 +261,12 @@ const emit = defineEmits<{
 }>();
 
 const { user, initAuth } = useAuth();
-const { users, currentUserProfile, loadUsers, loadCurrentUserProfile } =
-    useUsers();
+const {
+    users,
+    currentUserProfile,
+    loadUsers,
+    loadCurrentUserProfile
+} = useUsers();
 
 const paises = ["Colombia"];
 const estados = [
@@ -265,7 +288,8 @@ const defaultForm = () => ({
     fechaInstalacion: "",
     diasAcordados: null as number | null,
     encargado: user.value?.uid || "",
-    estado: "Vendido",
+    estado: PROJECT_STATES.IN_PROGRESS.id,
+    sub_state: "Vendido",
     valorTotal: null as number | null,
     porcentajesPago: "50%, 30%, 20%",
     notas: "",
@@ -282,7 +306,10 @@ onMounted(async () => {
 watch(
     () => props.project,
     (p: Project | null | undefined) => {
-        if (p) Object.assign(form, defaultForm(), p);
+        if (p)
+            Object.assign(form, defaultForm(), p, {
+                sub_state: p.sub_state || p.estado || "",
+            });
         else Object.assign(form, defaultForm());
     },
     { immediate: true },
@@ -326,6 +353,8 @@ const roleName = computed(() =>
 const canAssignAnyUser = computed(() =>
     ["admin", "superadmin", "super admin"].includes(roleName.value),
 );
+
+const canManageProjectState = computed(() => canAssignAnyUser.value);
 
 const userDisplayName = (appUser: Pick<AppUser, "displayName" | "email">) =>
     appUser.displayName || appUser.email || "Usuario sin nombre";
@@ -375,6 +404,7 @@ const isValid = computed(
         form.ciudad &&
         form.fechaCreacion &&
         form.encargado &&
+        form.sub_state &&
         typeof form.diasAcordados === "number" &&
         Number.isFinite(form.diasAcordados) &&
         form.diasAcordados >= 0,
@@ -386,6 +416,7 @@ const handleSubmit = () => {
 
     emit("save", {
         ...projectData,
+        sub_state: form.sub_state,
         diasAcordados:
             typeof form.diasAcordados === "number"
                 ? form.diasAcordados

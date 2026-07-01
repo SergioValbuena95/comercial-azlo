@@ -10,7 +10,8 @@ export interface Project {
     fechaInstalacion: string;
     diasAcordados?: number | null;
     encargado: string;
-    estado: string;
+    sub_state?: string;
+    estado?: ProjectStateId | string;
     valorTotal?: number | null;
     porcentajesPago?: string;
     pagosRealizados?: number[];
@@ -23,6 +24,42 @@ export interface Project {
     createdAt?: string;
 }
 
+export const PROJECT_STATES = {
+    IN_PROGRESS: {
+        id: 1,
+        label: "En tramite",
+    },
+    SOLD: {
+        id: 2,
+        label: "Vendido",
+    },
+} as const;
+
+export type ProjectStateId =
+    (typeof PROJECT_STATES)[keyof typeof PROJECT_STATES]["id"];
+
+export const projectStateLabel = (state?: Project["estado"]) => {
+    const numericState = Number(state);
+    const match = Object.values(PROJECT_STATES).find(
+        (projectState) => projectState.id === numericState,
+    );
+
+    return match?.label || "";
+};
+
+const projectPayloadWithState = <T extends Partial<Project>>(data: T): T => {
+    const subState = String(data.sub_state || "").trim().toLowerCase();
+
+    if (subState === "facturado") {
+        return {
+            ...data,
+            estado: PROJECT_STATES.SOLD.id,
+        };
+    }
+
+    return data;
+};
+
 // Seed data from CSV
 const SEED_DATA: Omit<Project, "id">[] = [
     {
@@ -33,7 +70,7 @@ const SEED_DATA: Omit<Project, "id">[] = [
         fechaCreacion: "2026-07-24",
         fechaInstalacion: "2026-10-02",
         encargado: "Tatiana Ortega",
-        estado: "Vendido",
+        sub_state: "Vendido",
     },
     {
         proyecto: "DESINFUR SAS",
@@ -43,7 +80,7 @@ const SEED_DATA: Omit<Project, "id">[] = [
         fechaCreacion: "2026-01-13",
         fechaInstalacion: "2026-04-14",
         encargado: "Tatiana Ortega",
-        estado: "Vendido",
+        sub_state: "Vendido",
     },
     {
         proyecto: "Residencial Nexus 3",
@@ -53,7 +90,7 @@ const SEED_DATA: Omit<Project, "id">[] = [
         fechaCreacion: "2026-11-24",
         fechaInstalacion: "2026-01-01",
         encargado: "Tatiana Ortega",
-        estado: "Vendido",
+        sub_state: "Vendido",
     },
     {
         proyecto: "Hospital Nexus 4",
@@ -63,7 +100,7 @@ const SEED_DATA: Omit<Project, "id">[] = [
         fechaCreacion: "2026-09-16",
         fechaInstalacion: "2026-11-14",
         encargado: "Tatiana Ortega",
-        estado: "Vendido",
+        sub_state: "Vendido",
     },
     {
         proyecto: "Hospital Nexus 5",
@@ -83,17 +120,25 @@ const normalizeProject = (project: Project): Project => ({
     valorTotal: null,
     porcentajesPago: "",
     notas: "",
+    estado: PROJECT_STATES.IN_PROGRESS.id,
     createdByUid: "",
     createdByEmail: "",
     createdByName: "",
     createdAt: "",
     ...project,
+    sub_state:
+        project.sub_state ||
+        (typeof project.estado === "string" ? project.estado : ""),
     pagosRealizados: Array.isArray(project.pagosRealizados)
         ? project.pagosRealizados
               .map(Number)
               .filter((value) => Number.isInteger(value) && value >= 0)
         : [],
 });
+
+export const projectSubState = (project: Project) =>
+    project.sub_state ||
+    (typeof project.estado === "string" ? project.estado : "");
 
 export function useProjects() {
     const projects = ref<Project[]>([]);
@@ -110,18 +155,36 @@ export function useProjects() {
         try {
             const { $db, $firebase } = useNuxtApp() as any;
             const { user, initAuth } = useAuth();
+            const { getUser } = useUsers();
             await initAuth();
 
             if ($db && $firebase && user.value) {
+                const currentUserProfile = await getUser(user.value.uid);
+                const roleName = (
+                    currentUserProfile?.roleName || ""
+                )
+                    .trim()
+                    .toLowerCase();
+                const canSeeAllProjects = [
+                    "admin",
+                    "superadmin",
+                    "super admin",
+                ].includes(roleName);
                 const currentUserRef = $firebase.doc(
                     $db,
                     "users",
                     user.value.uid,
                 );
-                const q = $firebase.query(
-                    $firebase.collection($db, "projects"),
-                    $firebase.where("created_by", "==", currentUserRef),
+                const projectsCollection = $firebase.collection(
+                    $db,
+                    "projects",
                 );
+                const q = canSeeAllProjects
+                    ? $firebase.query(projectsCollection)
+                    : $firebase.query(
+                          projectsCollection,
+                          $firebase.where("created_by", "==", currentUserRef),
+                      );
 
                 // Use onSnapshot for real-time updates
                 unsubscribeProjects?.();
@@ -176,6 +239,7 @@ export function useProjects() {
 
     const addProject = async (project: Omit<Project, "id">) => {
         try {
+            const projectWithState = projectPayloadWithState(project);
             const { $db, $firebase } = useNuxtApp() as any;
             const { user, initAuth } = useAuth();
             const { getUser } = useUsers();
@@ -187,8 +251,8 @@ export function useProjects() {
                 : null;
             const projectWithCreator = currentUser
                   ? {
-                        ...project,
-                      encargado: project.encargado || currentUser.uid,
+                        ...projectWithState,
+                      encargado: projectWithState.encargado || currentUser.uid,
                       created_by: $firebase.doc(
                           $db,
                           "users",
@@ -208,7 +272,7 @@ export function useProjects() {
                           "",
                       createdAt: new Date().toISOString(),
                   }
-                : project;
+                : projectWithState;
 
             if ($db && $firebase && useFirebase.value) {
                 await $firebase.addDoc(
@@ -229,11 +293,12 @@ export function useProjects() {
     };
 
     const updateProject = async (id: string, data: Partial<Project>) => {
+        const dataWithState = projectPayloadWithState(data);
         const idx = projects.value.findIndex((p) => p.id === id);
         if (idx !== -1) {
             projects.value[idx] = normalizeProject({
                 ...projects.value[idx],
-                ...data,
+                ...dataWithState,
             });
         }
 
@@ -242,7 +307,7 @@ export function useProjects() {
             if ($db && $firebase && useFirebase.value) {
                 await $firebase.updateDoc(
                     $firebase.doc($db, "projects", id),
-                    data,
+                    dataWithState,
                 );
             }
         } catch (e) {
@@ -271,7 +336,8 @@ export function useProjects() {
         const total = projects.value.length;
         const byStatus = projects.value.reduce(
             (acc, p) => {
-                acc[p.estado] = (acc[p.estado] || 0) + 1;
+                const subState = projectSubState(p) || "Sin estado";
+                acc[subState] = (acc[subState] || 0) + 1;
                 return acc;
             },
             {} as Record<string, number>,
@@ -321,13 +387,13 @@ export function useProjects() {
         }, 0);
 
         const active = projects.value.filter(
-            (p) => p.estado.trim().toLowerCase() !== "facturado",
+            (p) => projectSubState(p).trim().toLowerCase() !== "facturado",
         ).length;
         const completed = projects.value.filter(
-            (p) => p.estado.trim().toLowerCase() === "instalado",
+            (p) => projectSubState(p).trim().toLowerCase() === "instalado",
         ).length;
         const closed = projects.value.filter(
-            (p) => p.estado.trim().toLowerCase() === "facturado",
+            (p) => projectSubState(p).trim().toLowerCase() === "facturado",
         ).length;
 
         return {

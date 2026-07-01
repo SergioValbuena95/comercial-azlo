@@ -59,17 +59,18 @@
                 type="button"
                 class="h-9 px-3 rounded-lg border text-xs font-medium transition-colors"
                 :class="
-                    activeProjectTab === tab.key
+                    activeProjectTabMain === tab.key
                         ? 'border-acid-400/40 bg-acid-400/10 text-acid-400'
                         : 'border-white/10 text-obsidian-400 hover:text-white hover:border-white/20'
                 "
-                @click="activeProjectTab = tab.key"
+                @click="activeProjectTabMain = tab.key"
             >
                 {{ tab.label }}
                 <span class="ml-1 text-obsidian-500">{{ tab.count }}</span>
             </button>
         </div>
-        <div class="flex flex-wrap items-center gap-2 mb-4">
+        <!-- sub filter states -->
+        <!-- <div class="flex flex-wrap items-center gap-2 mb-4">
             <button
                 v-for="tab in projectTabs"
                 :key="tab.key"
@@ -85,7 +86,7 @@
                 {{ tab.label }}
                 <span class="ml-1 text-obsidian-500">{{ tab.count }}</span>
             </button>
-        </div>
+        </div> -->
 
         <div class="glass-card overflow-hidden">
             <div class="block lg:hidden divide-y divide-white/[0.06]">
@@ -114,10 +115,10 @@
                         <p class="font-body text-white text-sm font-medium leading-snug flex-1">
                             {{ project.proyecto }}
                         </p>
-                        <StatusBadge :estado="project.estado" />
+                        <StatusBadge :estado="projectSubState(project)" />
                     </div>
                     <div class="flex flex-wrap gap-x-4 gap-y-1 text-xs text-obsidian-400 font-mono">
-                        <span>{{ project.encargado }}</span>
+                        <span>{{ responsibleName(project.encargado) }}</span>
                         <span>
                             Instalacion:
                             {{ formatDate(project.fechaInstalacion) }}
@@ -265,7 +266,7 @@
                             <td class="px-4 py-3.5 text-obsidian-400 text-sm font-mono">
                                 {{ project.ciudad }}
                             </td> <td class="px-4 py-3.5 text-obsidian-400 text-sm font-body">
-                                {{ project.encargado }}
+                                {{ responsibleName(project.encargado) }}
                             </td>
                             <td class="px-4 py-3.5 text-obsidian-500 text-xs font-mono">
                                 {{ formatDate(project.fechaCreacion) }}
@@ -277,7 +278,7 @@
                                 {{ formatDate(project.fechaDespacho) }}
                             </td>
                             <td class="px-4 py-3.5">
-                                <StatusBadge :estado="project.estado" />
+                                <StatusBadge :estado="projectSubState(project)" />
                             </td>
                             <td class="px-4 py-3.5 text-obsidian-300 text-sm font-mono whitespace-nowrap">
                                 {{ formatCurrency(project.valorTotal) }}
@@ -427,7 +428,11 @@
 </template>
 
 <script setup lang="ts">
-import type { Project } from "~/composables/useProjects";
+import {
+    PROJECT_STATES,
+    projectSubState,
+    type Project,
+} from "~/composables/useProjects";
 
 const props = defineProps<{
     projects: Project[];
@@ -443,10 +448,13 @@ const emit = defineEmits<{
     "payment-toggle": [project: Project, paidPayments: number[]];
 }>();
 
+const { users, loadUsers } = useUsers();
+
 const filterStatus = ref("");
 const filterCountry = ref("");
 const filterResponsible = ref("");
-const activeProjectTab = ref<"active" | "billed" | "all">("active");
+const activeProjectTabMain = ref<"inProgress" | "sold" | "all" >("all");
+const activeProjectTab = ref<"inProgress" | "sold" | "all">("all");
 const sortKey = ref("fechaCreacion");
 const sortDir = ref<"asc" | "desc">("desc");
 const currentPage = ref(1);
@@ -459,14 +467,14 @@ const columns = [
     { key: "fechaCreacion", label: "Solicitud" },
     { key: "fechaInstalacion", label: "Instalacion" },
     { key: "fechaDespacho", label: "Despacho" },
-    { key: "estado", label: "Estado" },
+    { key: "sub_state", label: "Estado" },
     { key: "valorTotal", label: "Valor total" },
     { key: "porcentajesPago", label: "Pagos" },
     { key: "notas", label: "Notas" },
 ];
 
 const allStatuses = computed(() =>
-    [...new Set(props.projects.map((project) => project.estado))].sort(),
+    [...new Set(props.projects.map(projectSubState))].filter(Boolean).sort(),
 );
 
 const allCountries = computed(() =>
@@ -474,30 +482,46 @@ const allCountries = computed(() =>
 );
 
 const allResponsibles = computed(() =>
-    [...new Set(props.projects.map((project) => project.encargado))].sort(),
+    [...new Set(props.projects.map((project) => responsibleName(project.encargado)))].sort(),
 );
 
-const isBilledProject = (project: Project) =>
-    project.estado.trim().toLowerCase() === "facturado";
+onMounted(() => {
+    loadUsers();
+});
+
+const responsibleName = (uid?: string) => {
+    if (!uid) return "";
+    const appUser = users.value.find((user) => user.uid === uid);
+    return appUser?.displayName || appUser?.email || uid;
+};
+
+const projectStateId = (project: Project) => Number(project.estado);
+
+const isInProgressProject = (project: Project) =>
+    projectStateId(project) === PROJECT_STATES.IN_PROGRESS.id;
+
+const isSoldProject = (project: Project) =>
+    projectStateId(project) === PROJECT_STATES.SOLD.id;
 
 const projectTabs = computed(() => {
-    const billedCount = props.projects.filter(isBilledProject).length;
-    const activeCount = props.projects.length - billedCount;
+    const soldCount = props.projects.filter(isSoldProject).length;
+    const inProgressCount = props.projects.filter(isInProgressProject).length;
 
     return [
-        { key: "active" as const, label: "Activos", count: activeCount },
-        { key: "billed" as const, label: "Facturados", count: billedCount },
+        { key: "inProgress" as const, label: "Activos", count: inProgressCount },
+        { key: "sold" as const, label: "Facturados", count: soldCount },
         { key: "all" as const, label: "Todos", count: props.projects.length },
     ];
 });
 
 const projectTabsMain = computed(() => {
-    const billedCount = props.projects.filter(isBilledProject).length;
-    const activeCount = props.projects.length - billedCount;
+    const soldCount = props.projects.filter(isSoldProject).length;
+    const inProgressCount = props.projects.filter(isInProgressProject).length;
 
     return [
-        { key: "active" as const, label: "En tramite", count: activeCount },
-        { key: "billed" as const, label: "Vendidos", count: billedCount },
+        { key: "all" as const, label: "Todos", count: props.projects.length },
+        { key: "inProgress" as const, label: "En tramite", count: inProgressCount },
+        { key: "sold" as const, label: "Vendidos", count: soldCount },
     ];
 });
 
@@ -507,16 +531,20 @@ const hasFilters = computed(
         filterStatus.value ||
         filterCountry.value ||
         filterResponsible.value ||
-        activeProjectTab.value !== "active",
+        activeProjectTabMain.value !== "all" ||
+        activeProjectTab.value !== "all",
 );
 
 const filteredProjects = computed(() => {
     let list = [...props.projects];
 
-    if (activeProjectTab.value === "active")
-        list = list.filter((project) => !isBilledProject(project));
-    if (activeProjectTab.value === "billed")
-        list = list.filter(isBilledProject);
+    if (activeProjectTabMain.value === "inProgress")
+        list = list.filter(isInProgressProject);
+    if (activeProjectTabMain.value === "sold") list = list.filter(isSoldProject);
+
+    if (activeProjectTab.value === "inProgress")
+        list = list.filter(isInProgressProject);
+    if (activeProjectTab.value === "sold") list = list.filter(isSoldProject);
 
     if (props.searchQuery) {
         const query = props.searchQuery.toLowerCase();
@@ -524,18 +552,21 @@ const filteredProjects = computed(() => {
             (project) =>
                 project.proyecto.toLowerCase().includes(query) ||
                 project.ciudad.toLowerCase().includes(query) ||
-                project.encargado.toLowerCase().includes(query) ||
+                responsibleName(project.encargado).toLowerCase().includes(query) ||
                 (project.notas || "").toLowerCase().includes(query),
         );
     }
 
     if (filterStatus.value)
-        list = list.filter((project) => project.estado === filterStatus.value);
+        list = list.filter(
+            (project) => projectSubState(project) === filterStatus.value,
+        );
     if (filterCountry.value)
         list = list.filter((project) => project.pais === filterCountry.value);
     if (filterResponsible.value)
         list = list.filter(
-            (project) => project.encargado === filterResponsible.value,
+            (project) =>
+                responsibleName(project.encargado) === filterResponsible.value,
         );
 
     list.sort((a, b) => {
@@ -589,6 +620,7 @@ watch(
         filterStatus,
         filterCountry,
         filterResponsible,
+        activeProjectTabMain,
         activeProjectTab,
     ],
     () => {
@@ -611,6 +643,8 @@ const setSort = (key: string) => {
 
 const sortValue = (project: Project, key: string) => {
     if (key === "valorTotal") return Number(project.valorTotal || 0);
+    if (key === "sub_state") return projectSubState(project);
+    if (key === "encargado") return responsibleName(project.encargado);
     return String((project as unknown as Record<string, unknown>)[key] || "");
 };
 
@@ -670,7 +704,8 @@ const clearFilters = () => {
     filterStatus.value = "";
     filterCountry.value = "";
     filterResponsible.value = "";
-    activeProjectTab.value = "active";
+    activeProjectTabMain.value = "all";
+    activeProjectTab.value = "all";
 };
 
 const formatCurrency = (value?: number | string | null) => {

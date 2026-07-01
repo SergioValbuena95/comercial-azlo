@@ -30,9 +30,9 @@
 
                     <div class="p-6 max-h-[72vh] overflow-y-auto space-y-6">
                         <div class="flex flex-wrap items-center gap-3">
-                            <StatusBadge :estado="project.estado" />
+                            <StatusBadge :estado="projectSubState(project)" />
                             <span class="text-xs font-mono text-obsidian-500 border border-white/10 rounded-lg px-2.5 py-1">
-                                {{ project.encargado || "Sin encargado" }}
+                                {{ responsibleName(project.encargado) || "Sin encargado" }}
                             </span>
                         </div>
 
@@ -102,7 +102,7 @@
 </template>
 
 <script setup lang="ts">
-import type { Project } from "~/composables/useProjects";
+import { projectSubState, type Project } from "~/composables/useProjects";
 
 defineProps<{
     modelValue: boolean;
@@ -112,6 +112,18 @@ defineProps<{
 defineEmits<{
     "update:modelValue": [value: boolean];
 }>();
+
+const { users, loadUsers } = useUsers();
+
+onMounted(() => {
+    loadUsers();
+});
+
+const responsibleName = (uid?: string) => {
+    if (!uid) return "";
+    const appUser = users.value.find((user) => user.uid === uid);
+    return appUser?.displayName || appUser?.email || uid;
+};
 
 const formatDate = (value?: string) => {
     if (!value) return "Sin fecha";
