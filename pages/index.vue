@@ -143,6 +143,7 @@
                 @edit="openEdit"
                 @delete="confirmDelete"
                 @payment-toggle="togglePayment"
+                @sub-state-change="updateSubState"
             />
             <!-- Charts Section -->
             <section class="animate-on-scroll" style="animation-delay: 0.1s">
@@ -246,7 +247,7 @@
 </template>
 
 <script setup lang="ts">
-import type { Project } from "~/composables/useProjects";
+import { useProjects, type Project } from "~/composables/useProjects";
 import { ref } from 'vue';
 
 const {
@@ -373,6 +374,11 @@ const handleNotesSave = async (notas: string) => {
 const togglePayment = async (project: Project, pagosRealizados: number[]) => {
     if (!project.id) return;
     await updateProject(project.id, { pagosRealizados });
+};
+
+const updateSubState = async (project: Project, subState: string) => {
+    if (!project.id) return;
+    await updateProject(project.id, { sub_state: subState });
 };
 
 const handleDelete = async () => {
