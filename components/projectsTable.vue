@@ -116,7 +116,13 @@
                         <p class="font-body text-white text-sm font-medium leading-snug flex-1">
                             {{ project.proyecto }}
                         </p>
-                        <StatusBadge :estado="projectSubState(project)" />
+                        <StatusBadge
+                            :estado="projectSubState(project)"
+                            editable
+                            :options="subStateOptions"
+                            :aria-label="`Actualizar estado de ${project.proyecto}`"
+                            @update:estado="handleSubStateChange(project, $event)"
+                        />
                     </div>
                     <div class="flex flex-wrap gap-x-4 gap-y-1 text-xs text-obsidian-400 font-mono">
                         <span>{{ responsibleName(project.encargado) }}</span>
@@ -250,13 +256,14 @@
                         <tr
                             v-for="project in paginatedProjects"
                             :key="projectKey(project)"
-                            class="group hover:bg-white/[0.02] transition-colors cursor-pointer"
+                            class="group hover:bg-white/[0.02] transition-colors"
                             role="button"
                             tabindex="0"
-                            @click="$emit('info', project)"
-                            @keydown.enter="$emit('info', project)"
                         >
-                            <td class="px-4 py-3.5">
+                            <td
+                                class="px-4 py-3.5 cursor-pointer"
+                                @click="$emit('info', project)"
+                                @keydown.enter="$emit('info', project)">
                                 <p
                                     class="text-white text-sm font-body font-medium max-w-xs truncate"
                                     :title="project.proyecto"
@@ -279,7 +286,13 @@
                                 {{ formatDate(project.fechaDespacho) }}
                             </td>
                             <td class="px-4 py-3.5">
-                                <StatusBadge :estado="projectSubState(project)" />
+                                <StatusBadge
+                                    :estado="projectSubState(project)"
+                                    editable
+                                    :options="subStateOptions"
+                                    :aria-label="`Actualizar estado de ${project.proyecto}`"
+                                    @update:estado="handleSubStateChange(project, $event)"
+                                />
                             </td>
                             <td class="px-4 py-3.5 text-obsidian-300 text-sm font-mono whitespace-nowrap">
                                 {{ formatCurrency(project.valorTotal) }}
@@ -447,6 +460,7 @@ const emit = defineEmits<{
     edit: [project: Project];
     delete: [project: Project];
     "payment-toggle": [project: Project, paidPayments: number[]];
+    "sub-state-change": [project: Project, subState: string];
 }>();
 
 const {
@@ -478,6 +492,15 @@ const columns = [
     { key: "valorTotal", label: "Valor total" },
     { key: "porcentajesPago", label: "Pagos" },
     { key: "notas", label: "Notas" },
+];
+
+const subStateOptions = [
+    "Vendido",
+    "Fabricación",
+    "Despacho",
+    "Instalacion",
+    "Instalado",
+    "Facturado",
 ];
 
 const allStatuses = computed(() =>
@@ -714,6 +737,11 @@ const handlePaymentClick = (project: Project, paymentIndex: number) => {
 
     localPaidPayments.value[key] = nextPaidPayments;
     emit("payment-toggle", project, nextPaidPayments);
+};
+
+const handleSubStateChange = (project: Project, subState: string) => {
+    if (subState === projectSubState(project)) return;
+    emit("sub-state-change", project, subState);
 };
 
 const clearFilters = () => {
