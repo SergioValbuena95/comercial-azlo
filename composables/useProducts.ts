@@ -35,68 +35,60 @@ const hasDeletedAt = (value: unknown): boolean => {
     return true;
 };
 
-const normalizeProduct = (
-    id: string,
-    data: Record<string, unknown>,
-): Product => ({
-    ...data,
-    id,
-    name: String(data.name || ""),
-    description:
-        typeof data.description === "string" ? data.description : undefined,
-    product_type_id:
-        typeof data.product_type_id === "string"
-            ? data.product_type_id
-            : undefined,
-    profit_percentage: toNumber(data.profit_percentage),
-    value: toNumber(data.value),
-    created_at: data.created_at,
-    deleted_at: data.deleted_at,
+const normalizeProduct = (row: any): Product => ({
+    id: String(row.id),
+    name: String(row.name || ""),
+    description: typeof row.description === "string" ? row.description : undefined,
+    product_type_id: typeof row.product_type_id === "string" ? row.product_type_id : undefined,
+    profit_percentage: toNumber(row.profit_percentage),
+    value: toNumber(row.value),
+    created_at: row.created_at,
+    deleted_at: row.deleted_at,
 });
 
 export function useProducts() {
     const products = ref<Product[]>([]);
     const loading = ref(false);
     const error = ref<string | null>(null);
-    let unsubscribeProducts: (() => void) | null = null;
+    const client = useSupabaseClient();
+    let productsChannel: any = null;
 
     const loadProducts = async () => {
         loading.value = true;
         error.value = null;
 
         try {
-            const { $db, $firebase } = useNuxtApp() as any;
+            const { data, error: err } = await (client as any)
+                .from("products")
+                .select("*");
 
-            const productsCollection = $firebase.collection($db, "products");
+            if (err) throw err;
 
-            unsubscribeProducts?.();
-            unsubscribeProducts = $firebase.onSnapshot(
-                productsCollection,
-                (snapshot: any) => {
-                    products.value = snapshot.docs
-                        .map((productDoc: any) =>
-                            normalizeProduct(productDoc.id, productDoc.data()),
-                        )
-                        .filter(
-                            (product: Product) =>
-                                !hasDeletedAt(product.deleted_at),
-                        )
-                        .sort((a: Product, b: Product) =>
-                            a.name.localeCompare(b.name, "es", {
-                                sensitivity: "base",
-                            }),
-                        );
-                    loading.value = false;
-                },
-                (err: unknown) => {
-                    console.error(err);
-                    error.value = "No se pudieron cargar los productos.";
-                    loading.value = false;
-                },
-            );
-        } catch (err) {
+            products.value = (data || [])
+                .map(normalizeProduct)
+                .filter((product: Product) => !hasDeletedAt(product.deleted_at))
+                .sort((a: Product, b: Product) =>
+                    a.name.localeCompare(b.name, "es", {
+                        sensitivity: "base",
+                    }),
+                );
+
+            if (!productsChannel) {
+                productsChannel = client
+                    .channel("products-changes")
+                    .on(
+                        "postgres_changes",
+                        { event: "*", schema: "public", table: "products" },
+                        () => {
+                            loadProducts();
+                        },
+                    )
+                    .subscribe();
+            }
+        } catch (err: any) {
             console.error(err);
             error.value = "No se pudieron cargar los productos.";
+        } finally {
             loading.value = false;
         }
     };
@@ -104,7 +96,7 @@ export function useProducts() {
     const addProduct = async (data: ProductCreateInput) => {
         const name = data.name.trim();
         const description = data.description?.trim() || "";
-        const productTypeId = data.product_type_id?.trim() || "";
+        const productTypeId = data.product_type_id?.trim() || null;
         const profitPercentage = Number(data.profit_percentage);
         const value = Number(data.value);
 
@@ -124,17 +116,19 @@ export function useProducts() {
         }
 
         try {
-            const { $db, $firebase } = useNuxtApp() as any;
+            const { error: err } = await (client as any)
+                .from("products")
+                .insert({
+                    name,
+                    description,
+                    product_type_id: productTypeId,
+                    profit_percentage: profitPercentage,
+                    value,
+                    created_at: new Date().toISOString(),
+                    deleted_at: null,
+                });
 
-            await $firebase.addDoc($firebase.collection($db, "products"), {
-                name,
-                description,
-                product_type_id: productTypeId,
-                profit_percentage: profitPercentage,
-                value,
-                created_at: $firebase.serverTimestamp(),
-                deleted_at: null,
-            });
+            if (err) throw err;
         } catch (err) {
             console.error(err);
             error.value = "No se pudo crear el producto.";
@@ -145,7 +139,7 @@ export function useProducts() {
     const updateProduct = async (id: string, data: ProductUpdateInput) => {
         const name = data.name.trim();
         const description = data.description?.trim() || "";
-        const productTypeId = data.product_type_id?.trim() || "";
+        const productTypeId = data.product_type_id?.trim() || null;
         const profitPercentage = Number(data.profit_percentage);
         const value = Number(data.value);
 
@@ -165,15 +159,18 @@ export function useProducts() {
         }
 
         try {
-            const { $db, $firebase } = useNuxtApp() as any;
+            const { error: err } = await (client as any)
+                .from("products")
+                .update({
+                    name,
+                    description,
+                    product_type_id: productTypeId,
+                    profit_percentage: profitPercentage,
+                    value,
+                })
+                .eq("id", id);
 
-            await $firebase.updateDoc($firebase.doc($db, "products", id), {
-                name,
-                description,
-                product_type_id: productTypeId,
-                profit_percentage: profitPercentage,
-                value,
-            });
+            if (err) throw err;
         } catch (err) {
             console.error(err);
             error.value = "No se pudo actualizar el producto.";
@@ -183,11 +180,14 @@ export function useProducts() {
 
     const deleteProduct = async (id: string) => {
         try {
-            const { $db, $firebase } = useNuxtApp() as any;
+            const { error: err } = await (client as any)
+                .from("products")
+                .update({
+                    deleted_at: new Date().toISOString(),
+                })
+                .eq("id", id);
 
-            await $firebase.updateDoc($firebase.doc($db, "products", id), {
-                deleted_at: $firebase.serverTimestamp(),
-            });
+            if (err) throw err;
         } catch (err) {
             console.error(err);
             error.value = "No se pudo eliminar el producto.";
@@ -196,8 +196,10 @@ export function useProducts() {
     };
 
     onScopeDispose(() => {
-        unsubscribeProducts?.();
-        unsubscribeProducts = null;
+        if (productsChannel) {
+            client.removeChannel(productsChannel);
+            productsChannel = null;
+        }
     });
 
     return {

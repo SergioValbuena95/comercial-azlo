@@ -1,4 +1,5 @@
-// plugins/firebase.client.ts
+// plugins/firebase.client.ts (Ignored/Deprecated - Migrated to Supabase)
+/*
 import { initializeApp, getApps } from "firebase/app";
 import {
     getAuth,
@@ -38,7 +39,6 @@ export default defineNuxtPlugin((nuxtApp) => {
         appId: config.public.firebaseAppId,
     };
 
-    // Initialize Firebase (avoid re-initialization in HMR)
     const app =
         getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
     const db = getFirestore(app);
@@ -72,3 +72,5 @@ export default defineNuxtPlugin((nuxtApp) => {
         },
     };
 });
+*/
+export default defineNuxtPlugin(() => {});

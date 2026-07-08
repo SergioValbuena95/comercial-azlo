@@ -4,7 +4,7 @@
             <div>
                 <h2 class="section-title text-xl">Proyectos</h2>
                 <p class="text-obsidian-500 text-xs font-mono mt-0.5">
-                    {{ filteredProjects.length }} de {{ projects.length }}
+                    {{ filteredProjects.length }} de {{ userProjects.length }}
                     registros
                 </p>
             </div>
@@ -503,12 +503,29 @@ const subStateOptions = [
     "Facturado",
 ];
 
+const userProjects = computed(() => {
+    let list = [...props.projects];
+    if (!isAdminUser(currentUserProfile.value)) {
+        const myUid = currentUserProfile.value?.uid;
+        if (myUid) {
+            list = list.filter(
+                (project) =>
+                    project.createdByUid === myUid ||
+                    project.encargado === myUid,
+            );
+        } else {
+            list = [];
+        }
+    }
+    return list;
+});
+
 const allStatuses = computed(() =>
-    [...new Set(props.projects.map(projectSubState))].filter(Boolean).sort(),
+    [...new Set(userProjects.value.map(projectSubState))].filter(Boolean).sort(),
 );
 
 const allCountries = computed(() =>
-    [...new Set(props.projects.map((project) => project.pais))].sort(),
+    [...new Set(userProjects.value.map((project) => project.pais))].sort(),
 );
 
 const allResponsibles = computed(() =>
@@ -543,22 +560,22 @@ const isSoldProject = (project: Project) =>
     projectStateId(project) === PROJECT_STATES.SOLD.id;
 
 const projectTabs = computed(() => {
-    const soldCount = props.projects.filter(isSoldProject).length;
-    const inProgressCount = props.projects.filter(isInProgressProject).length;
+    const soldCount = userProjects.value.filter(isSoldProject).length;
+    const inProgressCount = userProjects.value.filter(isInProgressProject).length;
 
     return [
         { key: "inProgress" as const, label: "Activos", count: inProgressCount },
         { key: "sold" as const, label: "Facturados", count: soldCount },
-        { key: "all" as const, label: "Todos", count: props.projects.length },
+        { key: "all" as const, label: "Todos", count: userProjects.value.length },
     ];
 });
 
 const projectTabsMain = computed(() => {
-    const soldCount = props.projects.filter(isSoldProject).length;
-    const inProgressCount = props.projects.filter(isInProgressProject).length;
+    const soldCount = userProjects.value.filter(isSoldProject).length;
+    const inProgressCount = userProjects.value.filter(isInProgressProject).length;
 
     return [
-        { key: "all" as const, label: "Todos", count: props.projects.length },
+        { key: "all" as const, label: "Todos", count: userProjects.value.length },
         { key: "inProgress" as const, label: "En tramite", count: inProgressCount },
         { key: "sold" as const, label: "Vendidos", count: soldCount },
     ];
@@ -575,7 +592,7 @@ const hasFilters = computed(
 );
 
 const filteredProjects = computed(() => {
-    let list = [...props.projects];
+    let list = [...userProjects.value];
 
     if (activeProjectTabMain.value === "inProgress")
         list = list.filter(isInProgressProject);

@@ -12,72 +12,65 @@ export interface ProductTypeCreateInput {
 
 export type ProductTypeUpdateInput = ProductTypeCreateInput;
 
-const normalizeProductType = (
-    id: string,
-    data: Record<string, unknown>,
-): ProductType => ({
-    ...data,
-    id,
-    name: String(data.name || ""),
-    description:
-        typeof data.description === "string" ? data.description : undefined,
+const normalizeProductType = (row: any): ProductType => ({
+    id: String(row.id),
+    name: String(row.name || ""),
+    description: typeof row.description === "string" ? row.description : undefined,
 });
 
 export function useProductTypes() {
     const productTypes = ref<ProductType[]>([]);
     const loading = ref(false);
     const error = ref<string | null>(null);
-    let unsubscribeProductTypes: (() => void) | null = null;
+    const client = useSupabaseClient();
+    let productTypesChannel: any = null;
 
     const loadProductTypes = async () => {
         loading.value = true;
         error.value = null;
 
         try {
-            const { $db, $firebase } = useNuxtApp() as any;
+            const { data, error: err } = await (client as any)
+                .from("product_types")
+                .select("*")
+                .order("name", { ascending: true });
 
-            const productTypesQuery = $firebase.query(
-                $firebase.collection($db, "product_types"),
-                $firebase.orderBy("name", "asc"),
-            );
+            if (err) throw err;
 
-            unsubscribeProductTypes?.();
-            unsubscribeProductTypes = $firebase.onSnapshot(
-                productTypesQuery,
-                (snapshot: any) => {
-                    productTypes.value = snapshot.docs.map(
-                        (productTypeDoc: any) =>
-                            normalizeProductType(
-                                productTypeDoc.id,
-                                productTypeDoc.data(),
-                            ),
-                    );
-                    loading.value = false;
-                },
-                (err: unknown) => {
-                    console.error(err);
-                    error.value =
-                        "No se pudieron cargar los tipos de producto.";
-                    loading.value = false;
-                },
-            );
-        } catch (err) {
+            productTypes.value = (data || []).map(normalizeProductType);
+
+            if (!productTypesChannel) {
+                productTypesChannel = client
+                    .channel("product_types-changes")
+                    .on(
+                        "postgres_changes",
+                        { event: "*", schema: "public", table: "product_types" },
+                        () => {
+                            loadProductTypes();
+                        },
+                    )
+                    .subscribe();
+            }
+        } catch (err: any) {
             console.error(err);
             error.value = "No se pudieron cargar los tipos de producto.";
+        } finally {
             loading.value = false;
         }
     };
 
     const getProductType = async (id: string) => {
         try {
-            const { $db, $firebase } = useNuxtApp() as any;
-            const snapshot = await $firebase.getDoc(
-                $firebase.doc($db, "product_types", id),
-            );
+            const { data, error: err } = await (client as any)
+                .from("product_types")
+                .select("*")
+                .eq("id", id)
+                .single();
 
-            if (!snapshot.exists()) return null;
+            if (err) throw err;
+            if (!data) return null;
 
-            return normalizeProductType(snapshot.id, snapshot.data());
+            return normalizeProductType(data);
         } catch (err) {
             console.error(err);
             error.value = "No se pudo cargar el tipo de producto.";
@@ -95,14 +88,16 @@ export function useProductTypes() {
         }
 
         try {
-            const { $db, $firebase } = useNuxtApp() as any;
+            const { error: err } = await (client as any)
+                .from("product_types")
+                .insert({
+                    name,
+                    description,
+                    created_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString(),
+                });
 
-            await $firebase.addDoc($firebase.collection($db, "product_types"), {
-                name,
-                description,
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString(),
-            });
+            if (err) throw err;
         } catch (err) {
             console.error(err);
             error.value = "No se pudo crear el tipo de producto.";
@@ -123,13 +118,16 @@ export function useProductTypes() {
         }
 
         try {
-            const { $db, $firebase } = useNuxtApp() as any;
+            const { error: err } = await (client as any)
+                .from("product_types")
+                .update({
+                    name,
+                    description,
+                    updated_at: new Date().toISOString(),
+                })
+                .eq("id", id);
 
-            await $firebase.updateDoc($firebase.doc($db, "product_types", id), {
-                name,
-                description,
-                updatedAt: new Date().toISOString(),
-            });
+            if (err) throw err;
         } catch (err) {
             console.error(err);
             error.value = "No se pudo actualizar el tipo de producto.";
@@ -139,9 +137,12 @@ export function useProductTypes() {
 
     const deleteProductType = async (id: string) => {
         try {
-            const { $db, $firebase } = useNuxtApp() as any;
+            const { error: err } = await (client as any)
+                .from("product_types")
+                .delete()
+                .eq("id", id);
 
-            await $firebase.deleteDoc($firebase.doc($db, "product_types", id));
+            if (err) throw err;
         } catch (err) {
             console.error(err);
             error.value = "No se pudo eliminar el tipo de producto.";
@@ -150,8 +151,10 @@ export function useProductTypes() {
     };
 
     onScopeDispose(() => {
-        unsubscribeProductTypes?.();
-        unsubscribeProductTypes = null;
+        if (productTypesChannel) {
+            client.removeChannel(productTypesChannel);
+            productTypesChannel = null;
+        }
     });
 
     return {

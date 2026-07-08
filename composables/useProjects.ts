@@ -60,60 +60,6 @@ const projectPayloadWithState = <T extends Partial<Project>>(data: T): T => {
     return data;
 };
 
-// Seed data from CSV
-const SEED_DATA: Omit<Project, "id">[] = [
-    {
-        proyecto: "CLUB NAVAL DE OFICIALES",
-        pais: "Colombia",
-        ciudad: "Cartagena",
-        direccion: "Cartagena",
-        fechaCreacion: "2026-07-24",
-        fechaInstalacion: "2026-10-02",
-        encargado: "Tatiana Ortega",
-        sub_state: "Vendido",
-    },
-    {
-        proyecto: "DESINFUR SAS",
-        pais: "Colombia",
-        ciudad: "Concepción",
-        direccion: "Av. Principal #53-38",
-        fechaCreacion: "2026-01-13",
-        fechaInstalacion: "2026-04-14",
-        encargado: "Tatiana Ortega",
-        sub_state: "Vendido",
-    },
-    {
-        proyecto: "Residencial Nexus 3",
-        pais: "Colombia",
-        ciudad: "Trujillo",
-        direccion: "Av. Principal #99-14",
-        fechaCreacion: "2026-11-24",
-        fechaInstalacion: "2026-01-01",
-        encargado: "Tatiana Ortega",
-        sub_state: "Vendido",
-    },
-    {
-        proyecto: "Hospital Nexus 4",
-        pais: "Colombia",
-        ciudad: "CDMX",
-        direccion: "Av. Principal #96-98",
-        fechaCreacion: "2026-09-16",
-        fechaInstalacion: "2026-11-14",
-        encargado: "Tatiana Ortega",
-        sub_state: "Vendido",
-    },
-    {
-        proyecto: "Hospital Nexus 5",
-        pais: "Colombia",
-        ciudad: "Puebla",
-        direccion: "Av. Principal #36-72",
-        fechaCreacion: "2026-03-03",
-        fechaInstalacion: "2026-06-06",
-        encargado: "Tatiana Ortega",
-        estado: "Vendido instalación",
-    },
-];
-
 const normalizeProject = (project: Project): Project => ({
     fechaDespacho: "",
     diasAcordados: null,
@@ -140,92 +86,162 @@ export const projectSubState = (project: Project) =>
     project.sub_state ||
     (typeof project.estado === "string" ? project.estado : "");
 
+const subStateMap = new Map<number, string>();
+const subStateNameToIdMap = new Map<string, number>();
+
+const mapDbToProject = (row: any, subStates: Map<number, string>): Project => {
+    let subStateStr = "";
+    if (row["sub-state"] && subStates.has(row["sub-state"])) {
+        subStateStr = subStates.get(row["sub-state"]) || "";
+    } else {
+        subStateStr = String(row["sub-state"] || "");
+    }
+
+    let pagosArr: number[] = [];
+    if (Array.isArray(row.payments_completed)) {
+        pagosArr = row.payments_completed.map(Number).filter(Number.isFinite);
+    }
+
+    return {
+        id: String(row.id),
+        proyecto: row.name || "",
+        pais: row.country || "",
+        ciudad: row.city || "",
+        direccion: row.address || "",
+        fechaCreacion: row.request_date || "",
+        fechaDespacho: row.shipment_date || "",
+        fechaInstalacion: row.installation_date || "",
+        diasAcordados: row.agreed_days,
+        encargado: row.reponsible || "",
+        estado: row.state || PROJECT_STATES.IN_PROGRESS.id,
+        sub_state: subStateStr,
+        valorTotal: row.total_value,
+        porcentajesPago: row.agreed_percentages || "",
+        pagosRealizados: pagosArr,
+        notas: row.notes || "",
+        createdByUid: row.reponsible_id ? String(row.reponsible_id) : "",
+        createdByEmail: row.created_by_email || "",
+        createdByName: row.created_by_name || row.reponsible || "",
+        createdAt: row.created_at || "",
+    };
+};
+
+const mapProjectToDb = (project: any, nameToIdMap: Map<string, number>) => {
+    let subStateId: number | null | undefined = undefined;
+    if (project.sub_state !== undefined) {
+        const subStateNameLower = String(project.sub_state || "").trim().toLowerCase();
+        if (subStateNameLower && nameToIdMap.has(subStateNameLower)) {
+            subStateId = nameToIdMap.get(subStateNameLower) || null;
+        } else if (Number.isInteger(Number(project.sub_state))) {
+            subStateId = Number(project.sub_state);
+        } else {
+            subStateId = null;
+        }
+    }
+
+    const result: any = {};
+    if (project.proyecto !== undefined) result.name = project.proyecto;
+    if (project.pais !== undefined) result.country = project.pais;
+    if (project.ciudad !== undefined) result.city = project.ciudad;
+    if (project.direccion !== undefined) result.address = project.direccion;
+    if (project.fechaCreacion !== undefined) result.request_date = project.fechaCreacion || null;
+    if (project.fechaDespacho !== undefined) result.shipment_date = project.fechaDespacho || null;
+    if (project.fechaInstalacion !== undefined) result.installation_date = project.fechaInstalacion || null;
+    if (project.diasAcordados !== undefined) result.agreed_days = project.diasAcordados;
+    if (project.encargado !== undefined) result.reponsible = project.encargado;
+    if (project.estado !== undefined) result.state = project.estado !== null ? Number(project.estado) : null;
+    if (project.sub_state !== undefined) result["sub-state"] = subStateId;
+    if (project.valorTotal !== undefined) result.total_value = project.valorTotal !== null ? Number(project.valorTotal) : 0;
+    if (project.porcentajesPago !== undefined) result.agreed_percentages = project.porcentajesPago;
+    if (project.pagosRealizados !== undefined) result.payments_completed = project.pagosRealizados;
+    if (project.notas !== undefined) result.notes = project.notas;
+
+    return result;
+};
+
 export function useProjects() {
     const projects = ref<Project[]>([]);
     const loading = ref(false);
     const error = ref<string | null>(null);
     const useFirebase = ref(false);
-    let unsubscribeProjects: (() => void) | null = null;
+    const client = useSupabaseClient();
+    let projectsChannel: any = null;
 
-    // Load only projects created by the current Firebase user.
+    const loadSubStates = async () => {
+        try {
+            const { data, error } = await client.from("sub_state").select("id, name");
+            if (!error && data) {
+                subStateMap.clear();
+                subStateNameToIdMap.clear();
+                data.forEach((row: any) => {
+                    if (row.id && row.name) {
+                        subStateMap.set(row.id, row.name);
+                        subStateNameToIdMap.set(row.name.toLowerCase().trim(), row.id);
+                    }
+                });
+            }
+        } catch (e) {
+            console.warn("Could not load sub_states mapping:", e);
+        }
+    };
+
     const loadProjects = async () => {
         loading.value = true;
         error.value = null;
 
         try {
-            const { $db, $firebase } = useNuxtApp() as any;
+            await loadSubStates();
+
             const { user, initAuth } = useAuth();
-            const { getUser } = useUsers();
+            const { currentUserProfile, loadCurrentUserProfile } = useUsers();
             const { getIsAdminUser } = useAccess();
             await initAuth();
 
-            if ($db && $firebase && user.value) {
-                const currentUserProfile = await getUser(user.value.uid);
-                const canSeeAllProjects =
-                    await getIsAdminUser(currentUserProfile);
-                const currentUserRef = $firebase.doc(
-                    $db,
-                    "users",
-                    user.value.uid,
-                );
-                const projectsCollection = $firebase.collection(
-                    $db,
-                    "projects",
-                );
-                const q = canSeeAllProjects
-                    ? $firebase.query(projectsCollection)
-                    : $firebase.query(
-                          projectsCollection,
-                          $firebase.where("created_by", "==", currentUserRef),
-                      );
+            if (user.value) {
+                if (!currentUserProfile.value) {
+                    await loadCurrentUserProfile();
+                }
+                const profile = currentUserProfile.value;
+                const canSeeAllProjects = await getIsAdminUser(profile);
 
-                // Use onSnapshot for real-time updates
-                unsubscribeProjects?.();
-                unsubscribeProjects = $firebase.onSnapshot(
-                    q,
-                    (snapshot: any) => {
-                        projects.value = snapshot.docs
-                            .map((doc: any) => ({
-                                id: doc.id,
-                                ...doc.data(),
-                            }))
-                            .map(normalizeProject);
-                        useFirebase.value = true;
-                        loading.value = false;
-                    },
-                    (err: any) => {
-                        console.error("Firebase projects error:", err);
-                        projects.value = [];
-                        error.value =
-                            "No se pudieron cargar los proyectos desde Firebase.";
-                        loading.value = false;
-                    },
-                );
+                let query = client.from("projects").select("*");
+
+                if (!canSeeAllProjects && profile) {
+                    query = query.eq("reponsible_id", Number(profile.id));
+                }
+
+                const { data, error: err } = await query;
+                if (err) throw err;
+
+                projects.value = (data || [])
+                    .map((row: any) => mapDbToProject(row, subStateMap))
+                    .sort((a: Project, b: Project) =>
+                        a.proyecto.localeCompare(b.proyecto, "es", {
+                            sensitivity: "base",
+                        }),
+                    );
+
+                // Set up real-time subscription
+                if (!projectsChannel) {
+                    projectsChannel = client
+                        .channel("projects-changes")
+                        .on(
+                            "postgres_changes",
+                            { event: "*", schema: "public", table: "projects" },
+                            () => {
+                                loadProjects();
+                            },
+                        )
+                        .subscribe();
+                }
             } else {
                 projects.value = [];
-                loading.value = false;
             }
         } catch (err) {
             console.error("Projects load error:", err);
             projects.value = [];
             error.value = "No se pudieron cargar los proyectos.";
-            loading.value = false;
-        }
-    };
-
-    const seedToFirebase = async (db: any, firebase: any) => {
-        try {
-            for (const project of SEED_DATA) {
-                await firebase.addDoc(
-                    firebase.collection(db, "projects"),
-                    normalizeProject(project),
-                );
-            }
-        } catch (e) {
-            console.warn("Could not seed Firebase:", e);
-            projects.value = SEED_DATA.map((p, i) =>
-                normalizeProject({ ...p, id: String(i + 1) }),
-            );
+        } finally {
             loading.value = false;
         }
     };
@@ -233,91 +249,67 @@ export function useProjects() {
     const addProject = async (project: Omit<Project, "id">) => {
         try {
             const projectWithState = projectPayloadWithState(project);
-            const { $db, $firebase } = useNuxtApp() as any;
             const { user, initAuth } = useAuth();
-            const { getUser } = useUsers();
+            const { currentUserProfile, loadCurrentUserProfile } = useUsers();
             await initAuth();
 
-            const currentUser = user.value;
-            const currentUserProfile = currentUser
-                ? await getUser(currentUser.uid)
-                : null;
-            const projectWithCreator = currentUser
-                  ? {
-                        ...projectWithState,
-                      encargado: projectWithState.encargado || currentUser.uid,
-                      created_by: $firebase.doc(
-                          $db,
-                          "users",
-                          currentUser.uid,
-                      ),
-                      createdByRef: $firebase.doc(
-                          $db,
-                          "users",
-                          currentUser.uid,
-                      ),
-                      createdByUid: currentUser.uid,
-                      createdByEmail: currentUser.email || "",
-                      createdByName:
-                          currentUserProfile?.displayName ||
-                          currentUser.displayName ||
-                          currentUser.email ||
-                          "",
-                      createdAt: new Date().toISOString(),
-                  }
-                : projectWithState;
+            if (user.value) {
+                if (!currentUserProfile.value) {
+                    await loadCurrentUserProfile();
+                }
+                const profile = currentUserProfile.value;
 
-            if ($db && $firebase && useFirebase.value) {
-                await $firebase.addDoc(
-                    $firebase.collection($db, "projects"),
-                    projectWithCreator,
-                );
-            } else {
-                projects.value.unshift(
-                    normalizeProject({
-                        ...projectWithCreator,
-                        id: Date.now().toString(),
-                    }),
-                );
+                const payload = mapProjectToDb(projectWithState, subStateNameToIdMap);
+                payload.reponsible_id = profile ? Number(profile.id) : null;
+                if (!payload.reponsible) {
+                    payload.reponsible = profile ? profile.displayName : user.value.email || "";
+                }
+                payload.created_by = profile ? Number(profile.id) : null;
+                payload.created_by_email = user.value.email || "";
+                payload.created_by_name = profile ? profile.displayName : "";
+
+                const { error: err } = await client.from("projects").insert(payload);
+                if (err) throw err;
             }
         } catch (e) {
-            console.error(e);
+            console.error("Error adding project:", e);
         }
     };
 
     const updateProject = async (id: string, data: Partial<Project>) => {
-        const dataWithState = projectPayloadWithState(data);
-        const idx = projects.value.findIndex((p) => p.id === id);
-        if (idx !== -1) {
-            projects.value[idx] = normalizeProject({
-                ...projects.value[idx],
-                ...dataWithState,
-            });
-        }
-
         try {
-            const { $db, $firebase } = useNuxtApp() as any;
-            if ($db && $firebase && useFirebase.value) {
-                await $firebase.updateDoc(
-                    $firebase.doc($db, "projects", id),
-                    dataWithState,
-                );
+            const dataWithState = projectPayloadWithState(data);
+            const payload = mapProjectToDb(dataWithState, subStateNameToIdMap);
+
+            // Filter out undefined keys to prevent updating them
+            const cleanPayload: any = {};
+            for (const key of Object.keys(payload)) {
+                if (payload[key] !== undefined) {
+                    cleanPayload[key] = payload[key];
+                }
             }
+
+            const { error: err } = await client
+                .from("projects")
+                .update(cleanPayload)
+                .eq("id", Number(id));
+
+            if (err) throw err;
         } catch (e) {
-            console.error(e);
+            console.error("Error updating project:", e);
         }
     };
 
     const deleteProject = async (id: string) => {
         try {
-            const { $db, $firebase } = useNuxtApp() as any;
-            if ($db && $firebase && useFirebase.value) {
-                await $firebase.deleteDoc($firebase.doc($db, "projects", id));
-            } else {
-                projects.value = projects.value.filter((p) => p.id !== id);
-            }
+            const { error: err } = await client
+                .from("projects")
+                .delete()
+                .eq("id", Number(id));
+
+            if (err) throw err;
         } catch (e) {
-            console.error(e);
+            console.error("Error deleting project:", e);
         }
     };
 
@@ -405,8 +397,10 @@ export function useProjects() {
     });
 
     onScopeDispose(() => {
-        unsubscribeProjects?.();
-        unsubscribeProjects = null;
+        if (projectsChannel) {
+            client.removeChannel(projectsChannel);
+            projectsChannel = null;
+        }
     });
 
     return {

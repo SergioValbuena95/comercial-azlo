@@ -3,72 +3,56 @@ export interface Role {
     name: string;
 }
 
-const normalizeRole = (id: string, data: Record<string, unknown>): Role => ({
-    id,
-    name: String(data.name || ""),
+const normalizeRole = (row: any): Role => ({
+    id: String(row.id),
+    name: String(row.name || ""),
 });
 
 export function useRoles() {
     const roles = ref<Role[]>([]);
     const loading = ref(false);
     const error = ref<string | null>(null);
-    let unsubscribeRoles: (() => void) | null = null;
+    const client = useSupabaseClient();
 
     const loadRoles = async () => {
         loading.value = true;
         error.value = null;
 
         try {
-            const { $db, $firebase } = useNuxtApp() as any;
+            const { data, error: err } = await client
+                .from("roles")
+                .select("*")
+                .order("name", { ascending: true });
 
-            const rolesQuery = $firebase.query(
-                $firebase.collection($db, "roles"),
-                $firebase.orderBy("name", "asc"),
-            );
+            if (err) throw err;
 
-            unsubscribeRoles?.();
-            unsubscribeRoles = $firebase.onSnapshot(
-                rolesQuery,
-                (snapshot: any) => {
-                    roles.value = snapshot.docs.map((roleDoc: any) =>
-                        normalizeRole(roleDoc.id, roleDoc.data()),
-                    );
-                    loading.value = false;
-                },
-                (err: unknown) => {
-                    console.error(err);
-                    error.value = "No se pudieron cargar los roles.";
-                    loading.value = false;
-                },
-            );
-        } catch (err) {
+            roles.value = (data || []).map(normalizeRole);
+        } catch (err: any) {
             console.error(err);
             error.value = "No se pudieron cargar los roles.";
+        } finally {
             loading.value = false;
         }
     };
 
     const getRole = async (id: string) => {
         try {
-            const { $db, $firebase } = useNuxtApp() as any;
-            const snapshot = await $firebase.getDoc(
-                $firebase.doc($db, "roles", id),
-            );
+            const { data, error: err } = await client
+                .from("roles")
+                .select("*")
+                .eq("id", Number(id))
+                .single();
 
-            if (!snapshot.exists()) return null;
+            if (err) throw err;
+            if (!data) return null;
 
-            return normalizeRole(snapshot.id, snapshot.data());
+            return normalizeRole(data);
         } catch (err) {
             console.error(err);
             error.value = "No se pudo cargar el rol.";
             return null;
         }
     };
-
-    onScopeDispose(() => {
-        unsubscribeRoles?.();
-        unsubscribeRoles = null;
-    });
 
     return {
         roles,

@@ -49,10 +49,10 @@
                                     class="input-dark"
                                 >
                                     <option :value="PROJECT_STATES.IN_PROGRESS.id">
-                                        En tramite
+                                        En tramite {{PROJECT_STATES.IN_PROGRESS.id}}
                                     </option>
                                     <option :value="PROJECT_STATES.SOLD.id">
-                                        Vendidos
+                                        Vendidos {{PROJECT_STATES.SOLD.id}}
                                     </option>
                                 </select>
                             </div>
@@ -407,7 +407,8 @@ const isValid = computed(
 const handleSubmit = () => {
     if (!isValid.value) return;
     const { id: _id, ...projectData } = form as typeof form & { id?: string };
-
+    console.log("projectData",projectData);
+    
     emit("save", {
         ...projectData,
         sub_state: form.sub_state,

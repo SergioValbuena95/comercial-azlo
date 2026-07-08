@@ -150,18 +150,26 @@
                     <h2 class="section-title text-xl mb-5">
                         Editar usuario
                     </h2>
-                    <form class="space-y-4" @submit.prevent="handleSave">
+                    <form class="space-y-4" @submit.prevent="handleSaveUser">
                         <div>
                             <label class="block text-xs font-mono text-obsidian-400 mb-2">
                                 Nombre
                             </label>
-                            <input v-model.trim="form.displayName" class="input-dark" type="text" />
+                            <input 
+                                v-model.trim="form.displayName"
+                                class="input-dark"
+                                type="text"
+                            />
                         </div>
                         <div>
                             <label class="block text-xs font-mono text-obsidian-400 mb-2">
                                 Email
                             </label>
-                            <input v-model.trim="form.email" class="input-dark" type="email" />
+                            <input
+                                v-model.trim="form.email"
+                                class="input-dark"
+                                type="email"
+                            />
                         </div>
                         <div>
                             <label class="block text-xs font-mono text-obsidian-400 mb-2">
@@ -193,10 +201,18 @@
                         </p>
 
                         <div class="flex gap-3 pt-2">
-                            <button type="button" class="btn-ghost flex-1" @click="closeEdit">
+                            <button
+                                type="button"
+                                class="btn-ghost flex-1"
+                                @click="closeEdit"
+                            >
                                 Cancelar
                             </button>
-                            <button type="submit" class="btn-primary flex-1" :disabled="saving">
+                            <button
+                                type="submit"
+                                class="btn-primary flex-1"
+                                :disabled="saving"
+                            >
                                 {{ saving ? "Guardando..." : "Guardar" }}
                             </button>
                         </div>
@@ -295,7 +311,7 @@ const confirmDelete = (appUser: AppUser) => {
     deletingUser.value = appUser;
 };
 
-const handleSave = async () => {
+const handleSaveUser = async () => {
     if (!editingUser.value) return;
 
     saving.value = true;

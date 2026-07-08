@@ -1,142 +1,99 @@
-import type { User } from "firebase/auth";
+import type { User } from "@supabase/supabase-js";
 
-const user = ref<User | null>(null);
-const loading = ref(true);
+// Keep loading and error refs global or local depending on usage
+const loading = ref(false);
 const error = ref<string | null>(null);
-let initialized = false;
-let unsubscribeAuth: (() => void) | null = null;
-let authReady: Promise<void> | null = null;
-
-const authErrorMessage = (code?: string) => {
-    const messages: Record<string, string> = {
-        "auth/invalid-email": "El correo no es valido.",
-        "auth/user-disabled": "Esta cuenta esta deshabilitada.",
-        "auth/user-not-found": "No existe una cuenta con este correo.",
-        "auth/wrong-password": "El password no es correcto.",
-        "auth/invalid-credential": "El correo o password no es correcto.",
-        "auth/email-already-in-use": "Ya existe una cuenta con este correo.",
-        "auth/weak-password": "El password debe tener al menos 6 caracteres.",
-        "auth/network-request-failed": "No se pudo conectar con Firebase.",
-        "auth/too-many-requests":
-            "Demasiados intentos. Intenta de nuevo mas tarde.",
-    };
-
-    return code && messages[code]
-        ? messages[code]
-        : "No se pudo completar la autenticacion.";
-};
-
-const emailVerificationSettings = () => {
-    if (!import.meta.client) return undefined;
-
-    return {
-        url: `${window.location.origin}/login?verified=1`,
-        handleCodeInApp: false,
-    };
-};
 
 export const useAuth = () => {
-    const initAuth = () => {
-        if (!import.meta.client) return Promise.resolve();
-        if (authReady) return authReady;
+    const client = useSupabaseClient();
+    const supabaseUser = useSupabaseUser();
 
-        authReady = new Promise<void>((resolve) => {
-            initialized = true;
+    // Map Supabase User to include 'uid' and 'displayName' for Firebase compatibility
+    const user = computed<any>(() => {
+        if (!supabaseUser.value) return null;
+        return {
+            ...supabaseUser.value,
+            uid: supabaseUser.value.id,
+            displayName: supabaseUser.value.user_metadata?.display_name || supabaseUser.value.user_metadata?.name || "",
+        };
+    });
 
-            const { $auth, $firebase } = useNuxtApp() as any;
-
-            if (!$auth || !$firebase?.onAuthStateChanged) {
-                loading.value = false;
-                error.value = "Firebase Auth no esta disponible.";
-                resolve();
-                return;
-            }
-
-            unsubscribeAuth = $firebase.onAuthStateChanged(
-                $auth,
-                (currentUser: User | null) => {
-                    user.value = currentUser;
-                    loading.value = false;
-                    error.value = null;
-                    resolve();
-                },
-                (authError: { code?: string }) => {
-                    user.value = null;
-                    loading.value = false;
-                    error.value = authErrorMessage(authError.code);
-                    resolve();
-                },
-            );
-        });
-
-        return authReady;
+    const initAuth = async () => {
+        // Supabase user is initialized automatically
+        return Promise.resolve();
     };
 
-    const login = async (email: string, password: string) => {
+    const login = async (emailVal: string, passwordVal: string) => {
         loading.value = true;
         error.value = null;
 
         try {
-            const { $auth, $firebase } = useNuxtApp() as any;
-            const credential = await $firebase.signInWithEmailAndPassword(
-                $auth,
-                email,
-                password,
-            );
+            const { data, error: authError } = await client.auth.signInWithPassword({
+                email: emailVal,
+                password: passwordVal,
+            });
 
-            if (!credential.user.emailVerified) {
-                await $firebase.sendEmailVerification(
-                    credential.user,
-                    emailVerificationSettings(),
-                );
-                await $firebase.signOut($auth);
-                error.value =
-                    "Verifica tu correo antes de entrar. Te enviamos un nuevo enlace.";
+            if (authError) throw authError;
+
+            if (!data.session) {
+                error.value = "Verifica tu correo antes de entrar.";
                 throw new Error("email-not-verified");
             }
         } catch (authError: any) {
-            if (authError?.message !== "email-not-verified") {
-                error.value = authErrorMessage(authError?.code);
+            // Map common error messages
+            let msg = authError.message || "No se pudo iniciar sesion.";
+            if (authError.status === 400) {
+                msg = "El correo o password no es correcto.";
             }
+            error.value = msg;
             throw authError;
         } finally {
             loading.value = false;
         }
     };
 
-    const register = async (email: string, password: string) => {
+    const register = async (emailVal: string, passwordVal: string) => {
         loading.value = true;
         error.value = null;
 
         try {
-            const { $auth, $firebase } = useNuxtApp() as any;
-            const credential = await $firebase.createUserWithEmailAndPassword(
-                $auth,
-                email,
-                password,
-            );
-            await $firebase.sendEmailVerification(
-                credential.user,
-                emailVerificationSettings(),
-            );
-            await $firebase.signOut($auth);
+            const { data, error: authError } = await client.auth.signUp({
+                email: emailVal,
+                password: passwordVal,
+                options: {
+                    emailRedirectTo: `${window.location.origin}/login?verified=1`,
+                }
+            });
+
+            if (authError) throw authError;
+
+            // If signup doesn't return a session immediately, it expects verification
+            if (data && !data.session) {
+                throw new Error("email-verification-required");
+            }
         } catch (authError: any) {
-            error.value = authErrorMessage(authError?.code);
+            let msg = authError.message || "No se pudo crear la cuenta.";
+            if (authError.message === "email-verification-required") {
+                msg = "Cuenta creada. Te enviamos un correo para verificar tu email antes de entrar.";
+            }
+            error.value = msg;
             throw authError;
         } finally {
             loading.value = false;
         }
     };
 
-    const resetPassword = async (email: string) => {
+    const resetPassword = async (emailVal: string) => {
         loading.value = true;
         error.value = null;
 
         try {
-            const { $auth, $firebase } = useNuxtApp() as any;
-            await $firebase.sendPasswordResetEmail($auth, email);
+            const { error: authError } = await client.auth.resetPasswordForEmail(emailVal, {
+                redirectTo: `${window.location.origin}/login`,
+            });
+            if (authError) throw authError;
         } catch (authError: any) {
-            error.value = authErrorMessage(authError?.code);
+            error.value = authError.message || "No se pudo enviar el correo de recuperacion.";
             throw authError;
         } finally {
             loading.value = false;
@@ -148,11 +105,11 @@ export const useAuth = () => {
         error.value = null;
 
         try {
-            const { $auth, $firebase } = useNuxtApp() as any;
-            await $firebase.signOut($auth);
+            const { error: authError } = await client.auth.signOut();
+            if (authError) throw authError;
             await navigateTo("/login");
         } catch (authError: any) {
-            error.value = authErrorMessage(authError?.code);
+            error.value = authError.message || "No se pudo cerrar sesion.";
             throw authError;
         } finally {
             loading.value = false;
@@ -160,10 +117,7 @@ export const useAuth = () => {
     };
 
     const stopAuth = () => {
-        unsubscribeAuth?.();
-        unsubscribeAuth = null;
-        authReady = null;
-        initialized = false;
+        // No-op for compatibility
     };
 
     return {

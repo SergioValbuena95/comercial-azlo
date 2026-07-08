@@ -97,7 +97,7 @@ defineProps<{
 const route = useRoute();
 const { initTheme } = useTheme();
 const { user, initAuth } = useAuth();
-const { getUser } = useUsers();
+const { getUser, currentUserProfile, loadCurrentUserProfile } = useUsers();
 const { isAdminUser } = useAccess();
 const settingsUser = ref<AppUser | null>(null);
 const accessLoading = ref(true);
@@ -113,10 +113,15 @@ const canAccessSettings = computed(() => isAdminUser(settingsUser.value));
 
 onMounted(async () => {
     initTheme();
-
+    
     try {
         await initAuth();
-        settingsUser.value = user.value ? await getUser(user.value.uid) : null;
+        if (!currentUserProfile.value) {
+            await loadCurrentUserProfile();
+        }
+        
+        const myUid = currentUserProfile.value?.uid;
+        settingsUser.value = (user.value && myUid) ? await getUser(myUid) : null;
     } finally {
         accessLoading.value = false;
     }

@@ -1,5 +1,3 @@
-import type { DocumentReference } from "firebase/firestore";
-
 export interface AppUser {
     id: string;
     uid: string;
@@ -19,99 +17,62 @@ export interface UserUpdateInput {
     status: string;
 }
 
-const referencePath = (value: unknown) => {
-    if (!value || typeof value !== "object") return "";
-    return "path" in value ? String((value as { path: string }).path) : "";
-};
+const normalizeUser = (row: any): AppUser => {
+    let roleNameVal = "";
+    const rolesData = row.roles || row.role;
 
-const referenceId = (value: unknown) => {
-    if (!value || typeof value !== "object") return "";
-    return "id" in value ? String((value as { id: string }).id) : "";
-};
+    if (rolesData) {
+        if (Array.isArray(rolesData)) {
+            roleNameVal = rolesData[0]?.name || "";
+        } else {
+            roleNameVal = rolesData.name || "";
+        }
+    }
 
-const roleIdValue = (value: unknown) => {
-    if (!value) return "";
-    if (typeof value === "string" || typeof value === "number")
-        return String(value);
-    return referenceId(value);
-};
-
-const normalizeUser = async (
-    id: string,
-    data: Record<string, unknown>,
-    firebase: any,
-): Promise<AppUser> => {
-    const rawRole = data.roleRef || data.role_id || data.roleId;
-    const roleReference = rawRole as
-        | DocumentReference
-        | undefined;
-    const roleSnapshot =
-        roleReference && typeof roleReference === "object"
-        ? await firebase.getDoc(roleReference)
-        : null;
-    const roleData =
-        roleSnapshot?.exists?.() && roleSnapshot.data
-            ? roleSnapshot.data()
-            : null;
+    // Static fallback if the join is blocked or empty
+    if (!roleNameVal && row.role_id) {
+        const idStr = String(row.role_id);
+        if (idStr === "1") roleNameVal = "Administrador";
+        else if (idStr === "2") roleNameVal = "Vendedor";
+    }
 
     return {
-        id,
-        uid: String(data.uid || id),
-        email: String(data.email || ""),
-        displayName: String(data.displayName || data.name || ""),
-        roleId: roleIdValue(rawRole),
-        roleName: String(data.roleName || roleData?.name || ""),
-        rolePath: referencePath(roleReference),
-        status: String(data.status || "active"),
+        id: String(row.id),
+        uid: String(row.id),
+        email: String(row.email || ""),
+        displayName: String(row.name || ""),
+        roleId: row.role_id ? String(row.role_id) : "",
+        roleName: String(roleNameVal || row.roleName || ""),
+        rolePath: "",
+        status: row.status ? "active" : "inactive",
     };
 };
 
+const currentUserProfile = ref<AppUser | null>(null);
+
 export function useUsers() {
     const users = ref<AppUser[]>([]);
-    const currentUserProfile = ref<AppUser | null>(null);
     const loading = ref(false);
     const error = ref<string | null>(null);
-    let unsubscribeUsers: (() => void) | null = null;
-    let unsubscribeCurrentUser: (() => void) | null = null;
+    const client = useSupabaseClient();
 
     const loadUsers = async () => {
         loading.value = true;
         error.value = null;
 
         try {
-            const { initAuth } = useAuth();
-            await initAuth();
+            const { data, error: err } = await client
+                .from("users")
+                .select("*, roles(name)")
+                .order("email", { ascending: true });
 
-            const { $db, $firebase } = useNuxtApp() as any;
-            const usersQuery = $firebase.query(
-                $firebase.collection($db, "users"),
-                $firebase.orderBy("email", "asc"),
-            );
+            if (err) throw err;
 
-            unsubscribeUsers?.();
-            unsubscribeUsers = $firebase.onSnapshot(
-                usersQuery,
-                async (snapshot: any) => {
-                    users.value = await Promise.all(
-                        snapshot.docs.map((userDoc: any) =>
-                            normalizeUser(
-                                userDoc.id,
-                                userDoc.data(),
-                                $firebase,
-                            ),
-                        ),
-                    );
-                    loading.value = false;
-                },
-                (err: unknown) => {
-                    console.error(err);
-                    error.value = "No se pudieron cargar los usuarios.";
-                    loading.value = false;
-                },
-            );
-        } catch (err) {
+            users.value = (data || []).map(normalizeUser);
+        } catch (err: any) {
             console.error(err);
             error.value = "No se pudieron cargar los usuarios.";
+        } finally {
             loading.value = false;
         }
     };
@@ -124,54 +85,42 @@ export function useUsers() {
             const { user, initAuth } = useAuth();
             await initAuth();
 
-            if (!user.value) {
+            if (!user.value || !user.value.email) {
                 currentUserProfile.value = null;
                 loading.value = false;
                 return;
             }
 
-            const { $db, $firebase } = useNuxtApp() as any;
-            const userDocRef = $firebase.doc($db, "users", user.value.uid);
+            const { data, error: err } = await client
+                .from("users")
+                .select("*, roles(name)")
+                .eq("email", user.value.email)
+                .single();
 
-            unsubscribeCurrentUser?.();
-            unsubscribeCurrentUser = $firebase.onSnapshot(
-                userDocRef,
-                async (snapshot: any) => {
-                    if (!snapshot.exists()) {
-                        currentUserProfile.value = null;
-                    } else {
-                        currentUserProfile.value = await normalizeUser(
-                            snapshot.id,
-                            snapshot.data(),
-                            $firebase,
-                        );
-                    }
-                    loading.value = false;
-                },
-                (err: unknown) => {
-                    console.error(err);
-                    error.value =
-                        "No se pudo cargar el perfil del usuario actual.";
-                    loading.value = false;
-                },
-            );
-        } catch (err) {
+            if (err) throw err;
+
+            currentUserProfile.value = data ? normalizeUser(data) : null;
+        } catch (err: any) {
             console.error(err);
             error.value = "No se pudo cargar el perfil del usuario actual.";
+        } finally {
             loading.value = false;
         }
     };
 
     const getUser = async (uid: string) => {
+
         try {
-            const { $db, $firebase } = useNuxtApp() as any;
-            const snapshot = await $firebase.getDoc(
-                $firebase.doc($db, "users", uid),
-            );
+            const { data, error: err } = await client
+                .from("users")
+                .select("*, roles(name)")
+                .eq("id", Number(uid))
+                .single();
 
-            if (!snapshot.exists()) return null;
+            if (err) throw err;
+            if (!data) return null;
 
-            return normalizeUser(snapshot.id, snapshot.data(), $firebase);
+            return normalizeUser(data);
         } catch (err) {
             console.error(err);
             error.value = "No se pudo cargar el usuario.";
@@ -186,18 +135,23 @@ export function useUsers() {
             const { user, initAuth } = useAuth();
             await initAuth();
 
-            if (!user.value) return;
+            if (!user.value || !currentUserProfile.value) return;
 
-            const { $db, $firebase } = useNuxtApp() as any;
-            await $firebase.setDoc(
-                $firebase.doc($db, "users", user.value.uid),
-                {
-                    uid: user.value.uid,
-                    email: user.value.email || "",
-                    ...data,
-                },
-                { merge: true },
-            );
+            const profileId = currentUserProfile.value.id;
+
+            const { error: err } = await client
+                .from("users")
+                .update({
+                    name: data.displayName,
+                })
+                .eq("id", Number(profileId));
+
+            if (err) throw err;
+
+            // Refresh profile locally
+            if (currentUserProfile.value) {
+                currentUserProfile.value.displayName = data.displayName || "";
+            }
         } catch (err) {
             console.error(err);
             error.value = "No se pudo actualizar el perfil.";
@@ -207,22 +161,17 @@ export function useUsers() {
 
     const updateUser = async (uid: string, data: UserUpdateInput) => {
         try {
-            const { $db, $firebase } = useNuxtApp() as any;
-            await $firebase.setDoc(
-                $firebase.doc($db, "users", uid),
-                {
-                    uid,
+            const { error: err } = await client
+                .from("users")
+                .update({
                     email: data.email,
-                    displayName: data.displayName,
-                    roleId: data.roleId,
-                    roleName: data.roleName,
-                    role_id: data.roleId
-                        ? $firebase.doc($db, "roles", data.roleId)
-                        : null,
-                    status: data.status,
-                },
-                { merge: true },
-            );
+                    name: data.displayName,
+                    role_id: data.roleId ? Number(data.roleId) : null,
+                    status: data.status === "active",
+                })
+                .eq("id", Number(uid));
+
+            if (err) throw err;
         } catch (err) {
             console.error(err);
             error.value = "No se pudo actualizar el usuario.";
@@ -232,21 +181,18 @@ export function useUsers() {
 
     const deleteUserProfile = async (uid: string) => {
         try {
-            const { $db, $firebase } = useNuxtApp() as any;
-            await $firebase.deleteDoc($firebase.doc($db, "users", uid));
+            const { error: err } = await client
+                .from("users")
+                .delete()
+                .eq("id", Number(uid));
+
+            if (err) throw err;
         } catch (err) {
             console.error(err);
             error.value = "No se pudo eliminar el usuario.";
             throw err;
         }
     };
-
-    onScopeDispose(() => {
-        unsubscribeUsers?.();
-        unsubscribeCurrentUser?.();
-        unsubscribeUsers = null;
-        unsubscribeCurrentUser = null;
-    });
 
     return {
         users,
