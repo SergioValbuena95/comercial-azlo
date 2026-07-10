@@ -506,7 +506,7 @@ const subStateOptions = [
 const userProjects = computed(() => {
     let list = [...props.projects];
     if (!isAdminUser(currentUserProfile.value)) {
-        const myUid = currentUserProfile.value?.uid;
+        const myUid = currentUserProfile.value?.id;
         if (myUid) {
             list = list.filter(
                 (project) =>

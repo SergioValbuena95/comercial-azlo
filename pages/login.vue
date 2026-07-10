@@ -150,7 +150,7 @@
                         }}
                     </button>
 
-                    <button
+                    <!-- <button
                         type="button"
                         class="btn-ghost w-full h-11"
                         :disabled="submitting || resettingPassword"
@@ -161,7 +161,7 @@
                                 ? "Ya tengo cuenta"
                                 : "Crear una cuenta"
                         }}
-                    </button>
+                    </button> -->
                 </form>
             </section>
         </main>

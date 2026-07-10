@@ -106,20 +106,21 @@ const navItems = [
     { label: "General", to: "/settings" },
     { label: "Usuarios", to: "/settings/users" },
     { label: "Productos", to: "/settings/products" },
-    { label: "Tipo de productos", to: "/settings/products/types" },
+    { label: "Tipos de productos", to: "/settings/products/types" },
+    { label: "Estados de proyectos", to: "/settings/projects/states" },
 ];
 
 const canAccessSettings = computed(() => isAdminUser(settingsUser.value));
 
 onMounted(async () => {
     initTheme();
-    
+
     try {
         await initAuth();
         if (!currentUserProfile.value) {
             await loadCurrentUserProfile();
         }
-        
+
         const myUid = currentUserProfile.value?.uid;
         settingsUser.value = (user.value && myUid) ? await getUser(myUid) : null;
     } finally {

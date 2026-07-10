@@ -87,6 +87,71 @@ export type Database = {
                     },
                 ]
             }
+            product_types: {
+                Row: {
+                    created_at: string
+                    deleted_at: string | null
+                    description: string | null
+                    id: number
+                    name: string
+                }
+                Insert: {
+                    created_at: string
+                    deleted_at?: string | null
+                    description?: string | null
+                    id?: number
+                    name: string
+                }
+                Update: {
+                    created_at?: string
+                    deleted_at?: string | null
+                    description?: string | null
+                    id?: number
+                    name?: string
+                }
+                Relationships: []
+            }
+            products: {
+                Row: {
+                    created_at: string
+                    deleted_at: string | null
+                    description: string | null
+                    id: number
+                    name: string
+                    product_type_id: number | null
+                    profit_percentage: number | null
+                    value: number | null
+                }
+                Insert: {
+                    created_at: string
+                    deleted_at?: string | null
+                    description?: string | null
+                    id?: number
+                    name: string
+                    product_type_id?: number | null
+                    profit_percentage?: number | null
+                    value?: number | null
+                }
+                Update: {
+                    created_at?: string
+                    deleted_at?: string | null
+                    description?: string | null
+                    id?: number
+                    name?: string
+                    product_type_id?: number | null
+                    profit_percentage?: number | null
+                    value?: number | null
+                }
+                Relationships: [
+                    {
+                        foreignKeyName: "products_product_type_id_fkey"
+                        columns: ["product_type_id"]
+                        isOneToOne: false
+                        referencedRelation: "product_types"
+                        referencedColumns: ["id"]
+                    },
+                ]
+            }
             projects: {
                 Row: {
                     address: string | null

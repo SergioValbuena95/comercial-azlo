@@ -44,5 +44,11 @@ const settingsSections = [
         description: "Consulta los registros de la coleccion product_types.",
         to: "/settings/products/types",
     },
+    {
+        subTitle: "Proyectos",
+        title: "Estados de proyectos",
+        description: "Consulta los registros de la coleccion states and sub_state.",
+        to: "/settings/projects/states",
+    },
 ];
 </script>

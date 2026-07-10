@@ -7,6 +7,14 @@ const rootDir = fileURLToPath(new URL(".", import.meta.url));
 export default defineNuxtConfig({
     compatibilityDate: "2026-06-02",
 
+    components: [
+        {
+            path: '~/components/buttons',
+            pathPrefix: false,
+        },
+        '~/components'
+    ],
+
     devtools: { enabled: true },
     vite: {
         server: {

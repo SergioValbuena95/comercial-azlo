@@ -77,34 +77,45 @@ export function useUsers() {
         }
     };
 
+let profileLoadingPromise: Promise<void> | null = null;
+
     const loadCurrentUserProfile = async () => {
-        loading.value = true;
-        error.value = null;
+        if (profileLoadingPromise) return profileLoadingPromise;
+
+        profileLoadingPromise = (async () => {
+            loading.value = true;
+            error.value = null;
+
+            try {
+                const { user, initAuth } = useAuth();
+                await initAuth();
+
+                if (!user.value || !user.value.email) {
+                    currentUserProfile.value = null;
+                    return;
+                }
+
+                const { data, error: err } = await client
+                    .from("users")
+                    .select("*, roles(name)")
+                    .eq("email", user.value.email)
+                    .single();
+
+                if (err) throw err;
+
+                currentUserProfile.value = data ? normalizeUser(data) : null;
+            } catch (err: any) {
+                console.error(err);
+                error.value = "No se pudo cargar el perfil del usuario actual.";
+            } finally {
+                loading.value = false;
+            }
+        })();
 
         try {
-            const { user, initAuth } = useAuth();
-            await initAuth();
-
-            if (!user.value || !user.value.email) {
-                currentUserProfile.value = null;
-                loading.value = false;
-                return;
-            }
-
-            const { data, error: err } = await client
-                .from("users")
-                .select("*, roles(name)")
-                .eq("email", user.value.email)
-                .single();
-
-            if (err) throw err;
-
-            currentUserProfile.value = data ? normalizeUser(data) : null;
-        } catch (err: any) {
-            console.error(err);
-            error.value = "No se pudo cargar el perfil del usuario actual.";
+            await profileLoadingPromise;
         } finally {
-            loading.value = false;
+            profileLoadingPromise = null;
         }
     };
 

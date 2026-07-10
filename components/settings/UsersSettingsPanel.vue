@@ -54,39 +54,39 @@
                         </td>
                     </tr>
                     <tr
-                        v-for="appUser in users"
-                        :key="appUser.uid"
+                        v-for="user in users"
+                        :key="user.uid"
                         class="hover:bg-white/[0.02] transition-colors"
                     >
                         <td class="px-4 py-3.5">
                             <p class="text-white text-sm font-medium">
-                                {{ appUser.displayName || "Sin nombre" }}
+                                {{ user.displayName || "Sin nombre" }}
                             </p>
                         </td>
                         <td class="px-4 py-3.5 text-obsidian-300 text-sm">
-                            {{ appUser.email || "--" }}
+                            {{ user.email || "--" }}
                         </td>
                         <td class="px-4 py-3.5">
                             <span class="label-badge bg-acid-400/15 text-acid-400">
-                                {{ appUser.roleName || "Sin rol" }}
+                                {{ user.roleName || "Sin rol" }}
                             </span>
                         </td>
                         <td class="px-4 py-3.5 text-obsidian-400 text-sm">
-                            {{ appUser.status === "inactive" ? "Inactivo" : "Activo" }}
+                            {{ user.status === "inactive" ? "Inactivo" : "Activo" }}
                         </td>
                         <td class="px-4 py-3.5">
                             <div class="flex items-center justify-end gap-2">
                                 <button
                                     type="button"
                                     class="btn-ghost h-8 px-3 text-xs"
-                                    @click="openEdit(appUser)"
+                                    @click="openEdit(user)"
                                 >
                                     Editar
                                 </button>
                                 <button
                                     type="button"
                                     class="h-8 px-3 rounded-xl border border-coral-400/20 text-coral-400 hover:border-coral-400/40 transition-colors text-xs"
-                                    @click="confirmDelete(appUser)"
+                                    @click="confirmDelete(user)"
                                 >
                                     Eliminar
                                 </button>
@@ -105,31 +105,31 @@
                 {{ error }}
             </div>
             <div
-                v-for="appUser in users"
+                v-for="user in users"
                 v-else
-                :key="appUser.uid"
+                :key="user.uid"
                 class="p-4"
             >
                 <div class="flex items-start justify-between gap-3">
                     <div>
                         <p class="text-white text-sm font-medium">
-                            {{ appUser.displayName || "Sin nombre" }}
+                            {{ user.displayName || "Sin nombre" }}
                         </p>
                         <p class="text-obsidian-500 text-xs">
-                            {{ appUser.email || "--" }}
+                            {{ user.email || "--" }}
                         </p>
                     </div>
                     <span class="label-badge bg-acid-400/15 text-acid-400">
-                        {{ appUser.roleName || "Sin rol" }}
+                        {{ user.roleName || "Sin rol" }}
                     </span>
                 </div>
                 <div class="flex gap-2 mt-4">
-                    <button class="btn-ghost h-8 px-3 text-xs" @click="openEdit(appUser)">
+                    <button class="btn-ghost h-8 px-3 text-xs" @click="openEdit(user)">
                         Editar
                     </button>
                     <button
                         class="h-8 px-3 rounded-xl border border-coral-400/20 text-coral-400 text-xs"
-                        @click="confirmDelete(appUser)"
+                        @click="confirmDelete(user)"
                     >
                         Eliminar
                     </button>
@@ -155,7 +155,7 @@
                             <label class="block text-xs font-mono text-obsidian-400 mb-2">
                                 Nombre
                             </label>
-                            <input 
+                            <input
                                 v-model.trim="form.displayName"
                                 class="input-dark"
                                 type="text"
@@ -239,7 +239,6 @@
                         <strong class="text-white">
                             {{ deletingUser.displayName || deletingUser.email }}
                         </strong>
-                        en Firestore.
                     </p>
                     <div class="flex gap-3">
                         <button class="btn-ghost flex-1" @click="deletingUser = null">
