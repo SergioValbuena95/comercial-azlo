@@ -170,7 +170,7 @@ export type Database = {
                     request_date: string | null
                     shipment_date: string | null
                     state: number | null
-                    "sub-state": number | null
+                    "sub_state": number | null
                     total_value: number
                 }
                 Insert: {
@@ -190,7 +190,7 @@ export type Database = {
                     request_date?: string | null
                     shipment_date?: string | null
                     state?: number | null
-                    "sub-state"?: number | null
+                    "sub_state"?: number | null
                     total_value: number
                 }
                 Update: {
@@ -210,7 +210,7 @@ export type Database = {
                     request_date?: string | null
                     shipment_date?: string | null
                     state?: number | null
-                    "sub-state"?: number | null
+                    "sub_state"?: number | null
                     total_value?: number
                 }
                 Relationships: [

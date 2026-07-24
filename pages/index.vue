@@ -143,7 +143,19 @@
                 @edit="openEdit"
                 @delete="confirmDelete"
                 @payment-toggle="togglePayment"
-                @sub-state-change="updateSubState"
+                @sub_state-change="updateSubState"
+            />
+            <!-- Activities table -->
+            <ActivitiesTable
+                :projects="projects"
+                :loading="loading"
+                :search-query="searchQuery"
+                @info="openInfo"
+                @notes="openNotes"
+                @edit="openEdit"
+                @delete="confirmDelete"
+                @payment-toggle="togglePayment"
+                @sub_state-change="updateSubState"
             />
             <!-- Charts Section -->
             <section class="animate-on-scroll" style="animation-delay: 0.1s">

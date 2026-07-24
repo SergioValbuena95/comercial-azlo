@@ -27,7 +27,7 @@ The project centralizes commercial follow-up work in one dashboard:
 - Auth-protected dashboard with global route middleware.
 - Login, registration, password reset, and verified-email enforcement.
 - Real-time project loading from Firestore with `onSnapshot`.
-- Project CRUD actions: create, edit, delete, update notes, update payment checks, and change sub-state.
+- Project CRUD actions: create, edit, delete, update notes, update payment checks, and change sub_state.
 - Role-aware project visibility: admin users can see all projects, while regular users see projects created by them.
 - KPI cards for project totals and sales goals.
 - Charts for status, city, monthly activity, monthly value, and responsible users.
@@ -92,9 +92,9 @@ The project currently uses Firebase as the main runtime data source for authenti
 Important project state behavior:
 
 - A project with `sub_state` equal to `facturado` is marked as sold.
-- Active projects are any projects whose sub-state is not `facturado`.
-- Installed projects are counted when the sub-state is `instalado`.
-- Closed projects are counted when the sub-state is `facturado`.
+- Active projects are any projects whose sub_state is not `facturado`.
+- Installed projects are counted when the sub_state is `instalado`.
+- Closed projects are counted when the sub_state is `facturado`.
 
 ## Access Model
 

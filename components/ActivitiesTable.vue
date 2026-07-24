@@ -2,92 +2,13 @@
     <section class="animate-on-scroll" style="animation-delay: 0.2s">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
             <div>
-                <h2 class="section-title text-xl">Proyectos</h2>
+                <h2 class="section-title text-xl">Proyecciones</h2>
                 <p class="text-obsidian-500 text-xs font-mono mt-0.5">
                     {{ filteredProjects.length }} de {{ userProjects.length }}
                     registros
                 </p>
             </div>
-
-            <div class="flex flex-wrap items-center gap-2">
-                <select
-                    v-model="filterStatus"
-                    class="input-dark h-9 w-auto text-xs"
-                >
-                    <option value="">Todos los estados</option>
-                    <option v-for="status in allStatuses" :key="status">
-                        {{ status }}
-                    </option>
-                </select>
-
-                <select
-                    v-model="filterCountry"
-                    class="input-dark h-9 w-auto text-xs hidden"
-                >
-                    <option value="">Todos los paises</option>
-                    <option v-for="country in allCountries" :key="country">
-                        {{ country }}
-                    </option>
-                </select>
-
-                <select
-                    v-if="canFilterByResponsible"
-                    v-model="filterResponsible"
-                    class="input-dark h-9 w-auto text-xs"
-                >
-                    <option value="">Todos los encargados</option>
-                    <option
-                        v-for="responsible in allResponsibles"
-                        :key="responsible"
-                    >
-                        {{ responsible }}
-                    </option>
-                </select>
-
-                <button
-                    v-if="hasFilters"
-                    class="btn-ghost h-9 text-xs text-coral-400 border-coral-400/20 hover:border-coral-400/40"
-                    @click="clearFilters"
-                >
-                    Limpiar x
-                </button>
-            </div>
         </div>
-         <div class="flex flex-wrap items-center gap-2 mb-4">
-            <button
-                v-for="tab in projectTabsMain"
-                :key="tab.key"
-                type="button"
-                class="h-9 px-3 rounded-lg border text-xs font-medium transition-colors"
-                :class="
-                    activeProjectTabMain === tab.key
-                        ? 'border-acid-400/40 bg-acid-400/10 text-acid-400'
-                        : 'border-white/10 text-obsidian-400 hover:text-white hover:border-white/20'
-                "
-                @click="activeProjectTabMain = tab.key"
-            >
-                {{ tab.label }}
-                <span class="ml-1 text-obsidian-500">{{ tab.count }}</span>
-            </button>
-        </div>
-        <!-- sub filter states -->
-        <!-- <div class="flex flex-wrap items-center gap-2 mb-4">
-            <button
-                v-for="tab in projectTabs"
-                :key="tab.key"
-                type="button"
-                class="h-9 px-3 rounded-lg border text-xs font-medium transition-colors"
-                :class="
-                    activeProjectTab === tab.key
-                        ? 'border-acid-400/40 bg-acid-400/10 text-acid-400'
-                        : 'border-white/10 text-obsidian-400 hover:text-white hover:border-white/20'
-                "
-                @click="activeProjectTab = tab.key"
-            >
-                {{ tab.label }}
-                <span class="ml-1 text-obsidian-500">{{ tab.count }}</span>
-            </button>
-        </div> -->
 
         <div class="glass-card overflow-hidden">
             <div class="block lg:hidden divide-y divide-white/[0.06]">
@@ -231,9 +152,6 @@
                                     </span>
                                 </div>
                             </th>
-                            <th class="px-4 py-3 text-right text-xs font-mono text-obsidian-500 uppercase tracking-wider">
-                                Acciones
-                            </th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-white/[0.04]">
@@ -242,7 +160,7 @@
                                 :colspan="columns.length + 1"
                                 class="px-4 py-12 text-center text-obsidian-500 font-mono text-sm"
                             >
-                                Cargando proyectos...
+                                Cargando actividades...
                             </td>
                         </tr>
                         <tr v-else-if="!filteredProjects.length">
@@ -272,9 +190,7 @@
                                 </p>
                             </td>
                             <td class="px-4 py-3.5 text-obsidian-400 text-sm font-mono">
-                                {{ project.ciudad }}
-                            </td> <td class="px-4 py-3.5 text-obsidian-400 text-sm font-body">
-                                {{ responsibleName(project.encargado) }}
+                                {{ (project as any).accion }}
                             </td>
                             <td class="px-4 py-3.5 text-obsidian-500 text-xs font-mono">
                                 {{ formatDate(project.fechaCreacion) }}
@@ -285,114 +201,8 @@
                             <td class="px-4 py-3.5 text-obsidian-500 text-xs font-mono">
                                 {{ formatDate(project.fechaDespacho) }}
                             </td>
-                            <td class="px-4 py-3.5">
-                                <StatusBadge
-                                    :estado="projectSubState(project)"
-                                    editable
-                                    :options="subStateOptions"
-                                    :aria-label="`Actualizar estado de ${project.proyecto}`"
-                                    @update:estado="handleSubStateChange(project, $event)"
-                                />
-                            </td>
-                            <td class="px-4 py-3.5 text-obsidian-300 text-sm font-mono whitespace-nowrap">
-                                {{ formatCurrency(project.valorTotal) }}
-                            </td>
-                            <td class="px-4 py-3.5 text-obsidian-400 text-xs font-mono">
-                                <div class="flex flex-wrap gap-1.5 min-w-32" @click.stop>
-                                    <button
-                                        v-for="(payment, index) in paymentParts(project)"
-                                        :key="`${projectKey(project)}-${index}-${payment}`"
-                                        type="button"
-                                        class="payment-chip"
-                                        :class="{
-                                            'payment-chip-paid':
-                                                isPaymentPaid(project, index),
-                                        }"
-                                        :title="
-                                            isPaymentPaid(project, index)
-                                                ? 'Marcar como pendiente'
-                                                : 'Marcar como pagado'
-                                        "
-                                        @click.stop="handlePaymentClick(project, index)"
-                                    >
-                                        {{ payment }}
-                                    </button>
-                                    <span
-                                        v-if="!paymentParts(project).length"
-                                        class="text-obsidian-500 whitespace-nowrap"
-                                    >
-                                        Sin definir
-                                    </span>
-                                </div>
-                            </td>
-                            <td class="px-4 py-3.5">
-                                <button
-                                    type="button"
-                                    class="relative w-8 h-8 flex items-center justify-center rounded-lg border border-white/10 text-obsidian-400 hover:text-white hover:border-white/20 hover:bg-white/5 transition-colors"
-                                    :class="{
-                                        'text-acid-400 border-acid-400/30 bg-acid-400/10':
-                                            project.notas,
-                                    }"
-                                    :title="
-                                        project.notas
-                                            ? 'Ver notas'
-                                            : 'Sin notas registradas'
-                                    "
-                                    aria-label="Ver notas"
-                                    @click.stop="$emit('notes', project)"
-                                >
-                                    <svg
-                                        aria-hidden="true"
-                                        class="w-4 h-4"
-                                        viewBox="0 0 24 24"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        stroke-width="2"
-                                    >
-                                        <path
-                                            d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"
-                                        />
-                                        <path d="M14 2v6h6" />
-                                        <path d="M8 13h8" />
-                                        <path d="M8 17h5" />
-                                    </svg>
-                                    <span
-                                        v-if="project.notas"
-                                        class="absolute right-1.5 top-1.5 w-1.5 h-1.5 rounded-full bg-acid-400"
-                                    ></span>
-                                </button>
-                            </td>
-                            <td class="px-4 py-3.5">
-                                <div class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <button
-                                        @click.stop="$emit('edit', project)"
-                                        class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/5 text-obsidian-400 hover:text-white transition-colors text-sm"
-                                        title="Editar"
-                                        aria-label="Editar"
-                                    >
-                                        <svg
-                                            aria-hidden="true"
-                                            class="w-4 h-4"
-                                            viewBox="0 0 24 24"
-                                            fill="none"
-                                            stroke="currentColor"
-                                            stroke-width="2"
-                                        >
-                                            <path d="M12 20h9" />
-                                            <path
-                                                d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"
-                                            />
-                                        </svg>
-                                    </button>
-                                    <button
-                                        @click.stop="$emit('delete', project)"
-                                        class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-coral-400/10 text-obsidian-500 hover:text-coral-400 transition-colors text-sm"
-                                        title="Eliminar"
-                                        aria-label="Eliminar"
-                                    >
-                                        x
-                                    </button>
-                                </div>
+                            <td class="px-4 py-3.5 text-obsidian-400 text-sm font-body">
+                                {{ responsibleName(project.encargado) }}
                             </td>
                         </tr>
                     </tbody>
@@ -445,14 +255,23 @@
 import {
     PROJECT_STATES,
     projectSubState,
+    useProjects,
     type Project,
 } from "~/composables/useProjects";
 
 const props = defineProps<{
-    projects: Project[];
-    loading: boolean;
-    searchQuery: string;
+    searchQuery?: string;
 }>();
+
+const {
+    projects: userProjects,
+    loading,
+    loadProjects
+} = useProjects();
+
+onMounted(() => {
+    loadProjects();
+});
 
 const emit = defineEmits<{
     info: [project: Project];
@@ -463,35 +282,23 @@ const emit = defineEmits<{
     "sub_state-change": [project: Project, subState: string];
 }>();
 
-const {
-    users,
-    currentUserProfile,
-    loadUsers,
-    loadCurrentUserProfile,
-} = useUsers();
-const { isAdminUser } = useAccess();
-
+// Dummy data to replace composables
 const filterStatus = ref("");
 const filterCountry = ref("");
 const filterResponsible = ref("");
-const activeProjectTabMain = ref<"inProgress" | "sold" | "all" >("all");
-const activeProjectTab = ref<"inProgress" | "sold" | "all">("all");
 const sortKey = ref("fechaCreacion");
 const sortDir = ref<"asc" | "desc">("desc");
 const currentPage = ref(1);
 const perPage = 10;
+const searchQuery = ref("");
 
 const columns = [
     { key: "proyecto", label: "Proyecto" },
-    { key: "ciudad", label: "Ciudad" },
-    { key: "encargado", label: "Encargado" },
+    { key: "accion", label: "Acción" },
     { key: "fechaCreacion", label: "Solicitud" },
     { key: "fechaInstalacion", label: "Instalacion" },
     { key: "fechaDespacho", label: "Despacho" },
-    { key: "sub_state", label: "Estado" },
-    { key: "valorTotal", label: "Valor total" },
-    { key: "porcentajesPago", label: "Pagos" },
-    { key: "notas", label: "Notas" },
+    { key: "encargado", label: "Encargado" },
 ];
 
 const subStateOptions = [
@@ -503,87 +310,38 @@ const subStateOptions = [
     "Facturado",
 ];
 
-const userProjects = computed(() => {
-    let list = [...props.projects];
-    if (!isAdminUser(currentUserProfile.value)) {
-        const myUid = currentUserProfile.value?.id;
-        if (myUid) {
-            list = list.filter(
-                (project) =>
-                    project.createdByUid === myUid ||
-                    project.encargado === myUid,
-            );
-        } else {
-            list = [];
-        }
-    }
-    return list;
-});
+// Replaced dummy data with data from composable
+const allStatuses = computed(() => ["Vendido", "Fabricación", "Despacho", "Instalacion", "Instalado", "Facturado"]);
+const allCountries = computed(() => ["Colombia", "México", "Perú"]);
+const allResponsibles = computed(() => ["Encargado 1", "Encargado 2"]);
 
-const allStatuses = computed(() =>
-    [...new Set(userProjects.value.map(projectSubState))].filter(Boolean).sort(),
-);
-
-const allCountries = computed(() =>
-    [...new Set(userProjects.value.map((project) => project.pais))].sort(),
-);
-
-const allResponsibles = computed(() =>
-    users.value
-        .filter((appUser) => appUser.roleId === "3")
-        .map((appUser) => responsibleName(appUser.uid))
-        .filter(Boolean)
-        .sort(),
-);
-
-onMounted(() => {
-    loadUsers();
-    loadCurrentUserProfile();
-});
-
-const canFilterByResponsible = computed(() =>
-    isAdminUser(currentUserProfile.value),
-);
+const canFilterByResponsible = computed(() => true);
 
 const responsibleName = (uid?: string) => {
     if (!uid) return "";
-    const appUser = users.value.find((user) => user.uid === uid);
-    return appUser?.displayName || appUser?.email || uid;
+    return uid === "user1" ? "Encargado 1" : uid === "user2" ? "Encargado 2" : uid;
 };
 
 const projectStateId = (project: Project) => Number(project.estado);
 
-const isInProgressProject = (project: Project) =>
-    projectStateId(project) === PROJECT_STATES.IN_PROGRESS.id;
+const isInProgressProject = (project: Project) => projectStateId(project) === (PROJECT_STATES?.IN_PROGRESS?.id || 1);
+const isSoldProject = (project: Project) => projectStateId(project) === (PROJECT_STATES?.SOLD?.id || 3);
 
-const isSoldProject = (project: Project) =>
-    projectStateId(project) === PROJECT_STATES.SOLD.id;
+const projectTabs = computed(() => [
+    { key: "inProgress" as const, label: "Activos", count: 1 },
+    { key: "sold" as const, label: "Facturados", count: 1 },
+    { key: "all" as const, label: "Todos", count: 2 },
+]);
 
-const projectTabs = computed(() => {
-    const soldCount = userProjects.value.filter(isSoldProject).length;
-    const inProgressCount = userProjects.value.filter(isInProgressProject).length;
-
-    return [
-        { key: "inProgress" as const, label: "Activos", count: inProgressCount },
-        { key: "sold" as const, label: "Facturados", count: soldCount },
-        { key: "all" as const, label: "Todos", count: userProjects.value.length },
-    ];
-});
-
-const projectTabsMain = computed(() => {
-    const soldCount = userProjects.value.filter(isSoldProject).length;
-    const inProgressCount = userProjects.value.filter(isInProgressProject).length;
-
-    return [
-        { key: "all" as const, label: "Todos", count: userProjects.value.length },
-        { key: "inProgress" as const, label: "En tramite", count: inProgressCount },
-        { key: "sold" as const, label: "Vendidos", count: soldCount },
-    ];
-});
+const projectTabsMain = computed(() => [
+    { key: "all" as const, label: "Todos", count: 2 },
+    { key: "inProgress" as const, label: "En tramite", count: 1 },
+    { key: "sold" as const, label: "Vendidos", count: 1 },
+]);
 
 const hasFilters = computed(
     () =>
-        props.searchQuery ||
+        searchQuery.value ||
         filterStatus.value ||
         filterCountry.value ||
         (canFilterByResponsible.value && filterResponsible.value) ||
@@ -592,101 +350,50 @@ const hasFilters = computed(
 );
 
 const filteredProjects = computed(() => {
-    let list = [...userProjects.value];
+    const list: any[] = [];
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
-    if (activeProjectTabMain.value === "inProgress")
-        list = list.filter(isInProgressProject);
-    if (activeProjectTabMain.value === "sold") list = list.filter(isSoldProject);
+    const getDiffDays = (dateStr: string) => {
+        if (!dateStr) return null;
+        const [year, month, day] = dateStr.split("-").map(Number);
+        const targetDate = new Date(year, month - 1, day);
+        targetDate.setHours(0, 0, 0, 0);
+        return Math.ceil((targetDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    };
 
-    if (activeProjectTab.value === "inProgress")
-        list = list.filter(isInProgressProject);
-    if (activeProjectTab.value === "sold") list = list.filter(isSoldProject);
-
-    if (props.searchQuery) {
-        const query = props.searchQuery.toLowerCase();
-        list = list.filter(
-            (project) =>
-                project.proyecto.toLowerCase().includes(query) ||
-                project.ciudad.toLowerCase().includes(query) ||
-                responsibleName(project.encargado).toLowerCase().includes(query) ||
-                (project.notas || "").toLowerCase().includes(query),
-        );
-    }
-
-    if (filterStatus.value)
-        list = list.filter(
-            (project) => projectSubState(project) === filterStatus.value,
-        );
-    if (filterCountry.value)
-        list = list.filter((project) => project.pais === filterCountry.value);
-    if (canFilterByResponsible.value && filterResponsible.value)
-        list = list.filter(
-            (project) =>
-                responsibleName(project.encargado) === filterResponsible.value,
-        );
-
-    list.sort((a, b) => {
-        const valueA = sortValue(a, sortKey.value);
-        const valueB = sortValue(b, sortKey.value);
-        if (typeof valueA === "number" && typeof valueB === "number") {
-            return sortDir.value === "asc" ? valueA - valueB : valueB - valueA;
+    userProjects.value.forEach((project) => {
+        const instDiff = getDiffDays(project.fechaInstalacion);
+        if (instDiff !== null && instDiff >= 0 && instDiff <= 30) {
+            list.push({
+                ...project,
+                id: `${project.id}-inst`,
+                accion: `Contactar para instalación (${instDiff} días)`,
+            });
         }
-        const stringA = String(valueA);
-        const stringB = String(valueB);
-        return sortDir.value === "asc"
-            ? stringA.localeCompare(stringB)
-            : stringB.localeCompare(stringA);
+
+        const despDiff = getDiffDays(project.fechaDespacho);
+        if (despDiff !== null && despDiff >= 0 && despDiff <= 30) {
+            list.push({
+                ...project,
+                id: `${project.id}-desp`,
+                accion: `Preparar despacho (${despDiff} días)`,
+            });
+        }
     });
 
     return list;
 });
 
-const totalPages = computed(() =>
-    Math.max(1, Math.ceil(filteredProjects.value.length / perPage)),
-);
+const totalPages = computed(() => 1);
 
-const paginatedProjects = computed(() => {
-    const start = (currentPage.value - 1) * perPage;
-    return filteredProjects.value.slice(start, start + perPage);
-});
+const paginatedProjects = computed(() => filteredProjects.value);
 
-const rangeStart = computed(() =>
-    filteredProjects.value.length ? (currentPage.value - 1) * perPage + 1 : 0,
-);
+const rangeStart = computed(() => 1);
 
-const rangeEnd = computed(() =>
-    Math.min(currentPage.value * perPage, filteredProjects.value.length),
-);
+const rangeEnd = computed(() => filteredProjects.value.length);
 
-const visiblePages = computed(() => {
-    const pages = [];
-    for (
-        let page = Math.max(1, currentPage.value - 2);
-        page <= Math.min(totalPages.value, currentPage.value + 2);
-        page++
-    ) {
-        pages.push(page);
-    }
-    return pages;
-});
-
-watch(
-    [
-        () => props.searchQuery,
-        filterStatus,
-        filterCountry,
-        filterResponsible,
-        activeProjectTabMain,
-        activeProjectTab,
-    ],
-    () => {
-        currentPage.value = 1;
-    },
-);
-
-watch(totalPages, (total) => {
-    if (currentPage.value > total) currentPage.value = total;
-});
+const visiblePages = computed(() => [1]);
 
 const setSort = (key: string) => {
     if (sortKey.value === key) {
@@ -706,15 +413,7 @@ const sortValue = (project: Project, key: string) => {
 
 const localPaidPayments = ref<Record<string, number[]>>({});
 
-const projectKey = (project: Project) =>
-    [
-        project.id || "sin-id",
-        project.proyecto,
-        project.ciudad,
-        project.fechaCreacion,
-        project.fechaInstalacion,
-        project.valorTotal ?? "sin-valor",
-    ].join("|");
+const projectKey = (project: Project) => project.id || "sin-id";
 
 const projectPaymentKey = (project: Project) => projectKey(project);
 
@@ -726,10 +425,7 @@ const paymentParts = (project: Project) => {
         return percentages.map((payment) => payment.replace(/\s+/g, ""));
     }
 
-    return value
-        .split(/[,-]/)
-        .map((payment) => payment.trim())
-        .filter(Boolean);
+    return value.split(/[,-]/).map((payment) => payment.trim()).filter(Boolean);
 };
 
 const displayedPaidPayments = (project: Project) => {

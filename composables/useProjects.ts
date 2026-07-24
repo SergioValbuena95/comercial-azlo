@@ -77,8 +77,8 @@ const normalizeProject = (project: Project): Project => ({
         (typeof project.estado === "string" ? project.estado : ""),
     pagosRealizados: Array.isArray(project.pagosRealizados)
         ? project.pagosRealizados
-              .map(Number)
-              .filter((value) => Number.isInteger(value) && value >= 0)
+            .map(Number)
+            .filter((value) => Number.isInteger(value) && value >= 0)
         : [],
 });
 
@@ -91,10 +91,10 @@ const subStateNameToIdMap = new Map<string, number>();
 
 const mapDbToProject = (row: any, subStates: Map<number, string>): Project => {
     let subStateStr = "";
-    if (row["sub-state"] && subStates.has(row["sub-state"])) {
-        subStateStr = subStates.get(row["sub-state"]) || "";
+    if (row["sub_state"] && subStates.has(row["sub_state"])) {
+        subStateStr = subStates.get(row["sub_state"]) || "";
     } else {
-        subStateStr = String(row["sub-state"] || "");
+        subStateStr = String(row["sub_state"] || "");
     }
 
     let pagosArr: number[] = [];
@@ -150,7 +150,7 @@ const mapProjectToDb = (project: any, nameToIdMap: Map<string, number>) => {
     if (project.diasAcordados !== undefined) result.agreed_days = project.diasAcordados;
     if (project.encargado !== undefined) result.reponsible = project.encargado;
     if (project.estado !== undefined) result.state = project.estado !== null ? Number(project.estado) : null;
-    if (project.sub_state !== undefined) result["sub-state"] = subStateId;
+    if (project.sub_state !== undefined) result["sub_state"] = subStateId;
     if (project.valorTotal !== undefined) result.total_value = project.valorTotal !== null ? Number(project.valorTotal) : 0;
     if (project.porcentajesPago !== undefined) result.agreed_percentages = project.porcentajesPago;
     if (project.pagosRealizados !== undefined) result.payments_completed = project.pagosRealizados;
@@ -224,7 +224,7 @@ export function useProjects() {
                 // Set up real-time subscription
                 if (!projectsChannel) {
                     projectsChannel = client
-                        .channel("projects-changes")
+                        .channel(`projects-changes-${Date.now()}-${Math.random()}`)
                         .on(
                             "postgres_changes",
                             { event: "*", schema: "public", table: "projects" },

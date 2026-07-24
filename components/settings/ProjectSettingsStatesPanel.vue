@@ -63,7 +63,7 @@
                                 {{ state.description }}
                             </p>
 
-                            <!-- Sub-states -->
+                            <!-- sub_states -->
                             <div class="mt-4">
                                 <div class="flex items-center justify-between mb-2">
                                     <p class="text-xs font-mono uppercase text-obsidian-400">Sub-estados</p>
@@ -223,7 +223,7 @@
             </div>
         </Transition>
     </Teleport>
-    <!-- Modal Form Sub-State Create/Edit -->
+    <!-- Modal Form sub_state Create/Edit -->
     <Teleport to="body">
         <Transition name="modal">
             <div
@@ -245,13 +245,13 @@
                     <form class="space-y-4" @submit.prevent="handleSaveSubState">
                         <div>
                             <label
-                                for="sub-state-name"
+                                for="sub_state-name"
                                 class="block text-xs font-mono text-obsidian-400 mb-2"
                             >
                                 Nombre
                             </label>
                             <input
-                                id="sub-state-name"
+                                id="sub_state-name"
                                 v-model.trim="subStateForm.name"
                                 class="input-dark"
                                 type="text"
@@ -289,7 +289,7 @@
         </Transition>
     </Teleport>
 
-    <!-- Modal Delete Sub-State -->
+    <!-- Modal Delete sub_state -->
     <Teleport to="body">
         <Transition name="modal">
             <div
@@ -361,7 +361,7 @@ const form = reactive({
     description: "",
 });
 
-// Sub-states state
+// sub_states state
 const showSubStateFormModal = ref(false);
 const targetParentState = ref<ProjectState | null>(null);
 const editingSubState = ref<SubState | null>(null);
@@ -449,7 +449,7 @@ const handleDelete = async () => {
     }
 };
 
-// Sub-states handlers
+// sub_states handlers
 const openCreateSubState = (parentState: ProjectState) => {
     targetParentState.value = parentState;
     editingSubState.value = null;
