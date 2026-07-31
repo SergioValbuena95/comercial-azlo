@@ -9,7 +9,7 @@
                 </p>
             </div>
 
-            <div class="flex flex-wrap items-center gap-2">
+            <div class="flex flex-wrap items-center gap-2 hidden">
                 <select
                     v-model="filterStatus"
                     class="input-dark h-9 w-auto text-xs"
@@ -53,7 +53,7 @@
                 </button>
             </div>
         </div>
-         <div class="flex flex-wrap items-center gap-2 mb-4">
+        <div class="flex flex-wrap items-center gap-2 mb-4">
             <button
                 v-for="tab in projectTabsMain"
                 :key="tab.key"
@@ -68,6 +68,13 @@
             >
                 {{ tab.label }}
                 <span class="ml-1 text-obsidian-500">{{ tab.count }}</span>
+            </button>
+            <button
+                v-if="hasFilters"
+                class="btn-ghost h-9 text-xs text-coral-400 border-coral-400/20 hover:border-coral-400/40 ml-auto"
+                @click="clearFilters"
+            >
+                Limpiar x
             </button>
         </div>
         <!-- sub filter states -->
@@ -119,18 +126,18 @@
                         <StatusBadge
                             :estado="projectSubState(project)"
                             editable
-                            :options="subStateOptions"
+                            :options="subStateOptions(project)"
                             :aria-label="`Actualizar estado de ${project.proyecto}`"
                             @update:estado="handleSubStateChange(project, $event)"
                         />
                     </div>
                     <div class="flex flex-wrap gap-x-4 gap-y-1 text-xs text-obsidian-400 font-mono">
                         <span>{{ responsibleName(project.encargado) }}</span>
-                        <span>
+                        <span v-if="project.fechaDespacho">
                             Instalacion:
                             {{ formatDate(project.fechaInstalacion) }}
                         </span>
-                        <span>
+                        <span v-if="project.fechaDespacho">
                             Despacho: {{ formatDate(project.fechaDespacho) }}
                         </span>
                     </div>
@@ -285,11 +292,12 @@
                             <td class="px-4 py-3.5 text-obsidian-500 text-xs font-mono">
                                 {{ formatDate(project.fechaDespacho) }}
                             </td>
+                            <!-- sub-state -->
                             <td class="px-4 py-3.5">
                                 <StatusBadge
                                     :estado="projectSubState(project)"
                                     editable
-                                    :options="subStateOptions"
+                                    :options="subStateOptions(project)"
                                     :aria-label="`Actualizar estado de ${project.proyecto}`"
                                     @update:estado="handleSubStateChange(project, $event)"
                                 />
@@ -297,6 +305,7 @@
                             <td class="px-4 py-3.5 text-obsidian-300 text-sm font-mono whitespace-nowrap">
                                 {{ formatCurrency(project.valorTotal) }}
                             </td>
+                            <!-- payments  -->
                             <td class="px-4 py-3.5 text-obsidian-400 text-xs font-mono">
                                 <div class="flex flex-wrap gap-1.5 min-w-32" @click.stop>
                                     <button
@@ -310,8 +319,8 @@
                                         }"
                                         :title="
                                             isPaymentPaid(project, index)
-                                                ? 'Marcar como pendiente'
-                                                : 'Marcar como pagado'
+                                                ? `Marcar como pendiente: ${formatCurrency(((project?.valorTotal || 0) * getPercentage(payment))/100)} `
+                                                : `Marcar como pagado: ${formatCurrency(((project?.valorTotal || 0) * getPercentage(payment))/100)}`
                                         "
                                         @click.stop="handlePaymentClick(project, index)"
                                     >
@@ -325,6 +334,7 @@
                                     </span>
                                 </div>
                             </td>
+                            <!-- notes -->
                             <td class="px-4 py-3.5">
                                 <button
                                     type="button"
@@ -362,36 +372,11 @@
                                     ></span>
                                 </button>
                             </td>
+                            <!-- actions -->
                             <td class="px-4 py-3.5">
                                 <div class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <button
-                                        @click.stop="$emit('edit', project)"
-                                        class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/5 text-obsidian-400 hover:text-white transition-colors text-sm"
-                                        title="Editar"
-                                        aria-label="Editar"
-                                    >
-                                        <svg
-                                            aria-hidden="true"
-                                            class="w-4 h-4"
-                                            viewBox="0 0 24 24"
-                                            fill="none"
-                                            stroke="currentColor"
-                                            stroke-width="2"
-                                        >
-                                            <path d="M12 20h9" />
-                                            <path
-                                                d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"
-                                            />
-                                        </svg>
-                                    </button>
-                                    <button
-                                        @click.stop="$emit('delete', project)"
-                                        class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-coral-400/10 text-obsidian-500 hover:text-coral-400 transition-colors text-sm"
-                                        title="Eliminar"
-                                        aria-label="Eliminar"
-                                    >
-                                        x
-                                    </button>
+                                    <EditButton @click="$emit('edit', project)" />
+                                    <DeleteButton @click="$emit('delete', project)" />
                                 </div>
                             </td>
                         </tr>
@@ -448,6 +433,11 @@ import {
     type Project,
 } from "~/composables/useProjects";
 
+const {
+    projectStateType: projectStates,
+    loadMainStates
+} = useProjectStatesTypes();
+
 const props = defineProps<{
     projects: Project[];
     loading: boolean;
@@ -494,14 +484,14 @@ const columns = [
     { key: "notas", label: "Notas" },
 ];
 
-const subStateOptions = [
-    "Vendido",
-    "Fabricación",
-    "Despacho",
-    "Instalacion",
-    "Instalado",
-    "Facturado",
-];
+// const subStateOptions = [
+//     "Vendido",
+//     "Fabricación",
+//     "Despacho",
+//     "Instalacion",
+//     "Instalado",
+//     "Facturado",
+// ];
 
 const userProjects = computed(() => {
     let list = [...props.projects];
@@ -510,7 +500,7 @@ const userProjects = computed(() => {
         if (myUid) {
             list = list.filter(
                 (project) =>
-                    project.createdByUid === myUid ||
+                    // project.createdByUid === myUid ||
                     project.encargado === myUid,
             );
         } else {
@@ -536,9 +526,22 @@ const allResponsibles = computed(() =>
         .sort(),
 );
 
+const subStateOptions = (project: Project) => {
+    if(project.estado){
+        const projectSubStateList = projectStates.value.find((state) => state.id === project.estado);
+        return projectSubStateList?.sub_state || [];
+    }
+};
+
+const getPercentage = (percentage: string) => {
+    const value = parseFloat(percentage);
+    return value;
+}
+
 onMounted(() => {
     loadUsers();
     loadCurrentUserProfile();
+    loadMainStates();
 });
 
 const canFilterByResponsible = computed(() =>
@@ -780,7 +783,7 @@ const formatCurrency = (value?: number | string | null) => {
 };
 
 const formatDate = (value?: string) => {
-    if (!value) return "--";
+    if (!value) return "N/A";
     const [year, month, day] = value.split("-");
     if (!year || !month || !day) return value;
     return `${day}/${month}/${year}`;

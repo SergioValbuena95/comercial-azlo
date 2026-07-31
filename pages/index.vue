@@ -161,9 +161,6 @@
             <section class="animate-on-scroll" style="animation-delay: 0.1s">
                 <div class="flex items-center justify-between mb-4">
                     <h2 class="section-title text-xl">Análisis Visual</h2>
-                    <span class="text-obsidian-500 text-xs font-mono">
-                        {{ stats.total }} registros
-                    </span>
                 </div>
                 <ClientOnly>
                     <Charts

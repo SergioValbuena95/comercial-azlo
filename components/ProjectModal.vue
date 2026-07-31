@@ -40,11 +40,16 @@
                     <!-- Form -->
                     <div class="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
                         <div class="grid grid-cols-2 gap-4">
-                            <div v-if="canManageProjectState" class="col-span-2">
+                            <div class="col-span-2">
                                 <label class="block text-xs font-mono text-obsidian-400 uppercase tracking-wider mb-1.5">
                                     Estado general *
                                 </label>
-                                <select
+                                <select v-model.number="form.estado" class="input-dark">
+                                    <option v-for="state in projectStates" :key="state.id" :value="state.id">
+                                        {{ state.name }}
+                                    </option>
+                                </select>
+                                <!-- <select
                                     v-model.number="form.estado"
                                     class="input-dark"
                                 >
@@ -54,8 +59,9 @@
                                     <option :value="PROJECT_STATES.SOLD.id">
                                         Vendidos {{PROJECT_STATES.SOLD.id}}
                                     </option>
-                                </select>
+                                </select> -->
                             </div>
+                            <!-- Project Name -->
                             <div class="col-span-2">
                                 <label class="block text-xs font-mono text-obsidian-400 uppercase tracking-wider mb-1.5">
                                     Proyecto *
@@ -67,6 +73,7 @@
                                     placeholder="Nombre del proyecto"
                                 />
                             </div>
+                            <!-- Country -->
                             <div>
                                 <label class="block text-xs font-mono text-obsidian-400 uppercase tracking-wider mb-1.5">
                                     País
@@ -78,6 +85,7 @@
                                     </option>
                                 </select>
                             </div>
+                            <!-- City -->
                             <div>
                                 <label class="block text-xs font-mono text-obsidian-400 uppercase tracking-wider mb-1.5">
                                     Ciudad *
@@ -89,6 +97,7 @@
                                     placeholder="Ciudad"
                                 />
                             </div>
+                            <!-- Address -->
                             <div class="col-span-2">
                                 <label class="block text-xs font-mono text-obsidian-400 uppercase tracking-wider mb-1.5" >
                                     Dirección
@@ -100,53 +109,55 @@
                                     placeholder="Dirección del proyecto"
                                 />
                             </div>
-                            <!-- Fecha Solicitud * -->
-                            <div>
-                                <label class="block text-xs font-mono text-obsidian-400 uppercase tracking-wider mb-1.5" >
-                                    Fecha Solicitud *
-                                </label>
-                                <input
-                                    v-model="form.fechaCreacion"
-                                    type="date"
-                                    class="input-dark"
-                                />
-                            </div>
-                            <!-- Dias acordados -->
-                            <div>
-                                <label class="block text-xs font-mono text-obsidian-400 uppercase tracking-wider mb-1.5">
-                                    Dias acordados
-                                </label>
-                                <input
-                                    v-model.number="form.diasAcordados"
-                                    type="number"
-                                    min="0"
-                                    step="1"
-                                    class="input-dark"
-                                    placeholder="0"
-                                />
-                            </div>
-                            <!-- Fecha Despacho -->
-                            <div>
-                                <label class="block text-xs font-mono text-obsidian-400 uppercase tracking-wider mb-1.5" >
-                                    Fecha Instalación
-                                </label>
-                                <input
-                                    v-model="form.fechaInstalacion"
-                                    type="date"
-                                    class="input-dark"
-                                />
-                            </div>
-                            <!-- Fecha Despacho -->
-                            <div>
-                                <label class="block text-xs font-mono text-obsidian-400 uppercase tracking-wider mb-1.5" >
-                                    Fecha Despacho
-                                </label>
-                                <input
-                                    v-model="form.fechaDespacho"
-                                    type="date"
-                                    class="input-dark"
-                                />
-                            </div>
+                            <!-- Fecha Solicitud -->
+                            <template v-if="form.estado === 2">
+                                <div>
+                                    <label class="block text-xs font-mono text-obsidian-400 uppercase tracking-wider mb-1.5" >
+                                        Fecha Solicitud *
+                                    </label>
+                                    <input
+                                        v-model="form.fechaCreacion"
+                                        type="date"
+                                        class="input-dark"
+                                    />
+                                </div>
+                                <!-- Dias acordados -->
+                                <div>
+                                    <label class="block text-xs font-mono text-obsidian-400 uppercase tracking-wider mb-1.5">
+                                        Dias acordados
+                                    </label>
+                                    <input
+                                        v-model.number="form.diasAcordados"
+                                        type="number"
+                                        min="0"
+                                        step="1"
+                                        class="input-dark"
+                                        placeholder="0"
+                                    />
+                                </div>
+                                <!-- Fecha Instalación -->
+                                <div>
+                                    <label class="block text-xs font-mono text-obsidian-400 uppercase tracking-wider mb-1.5" >
+                                        Fecha Instalación
+                                    </label>
+                                    <input
+                                        v-model="form.fechaInstalacion"
+                                        type="date"
+                                        class="input-dark"
+                                    />
+                                </div>
+                                <!-- Fecha Despacho -->
+                                <div>
+                                    <label class="block text-xs font-mono text-obsidian-400 uppercase tracking-wider mb-1.5" >
+                                        Fecha Despacho
+                                    </label>
+                                    <input
+                                        v-model="form.fechaDespacho"
+                                        type="date"
+                                        class="input-dark"
+                                    />
+                                </div>
+                            </template>
                             <!-- Encargado * -->
                             <div>
                                 <label class="block text-xs font-mono text-obsidian-400 uppercase tracking-wider mb-1.5" >
@@ -166,7 +177,7 @@
                                     </option>
                                 </select>
                             </div>
-                            <!-- Encargado * -->
+                            <!-- Subestado * -->
                             <div>
                                 <label class="block text-xs font-mono text-obsidian-400 uppercase tracking-wider mb-1.5">
                                     Estado *
@@ -176,12 +187,12 @@
                                     class="input-dark"
                                 >
                                     <option value="">Seleccionar...</option>
-                                    <option v-for="s in estados" :key="s">
-                                        {{ s }}
+                                    <option v-for="sub in availableSubStates" :key="sub.id" :value="sub.name">
+                                        {{ sub.name }}
                                     </option>
                                 </select>
                             </div>
-                            <!-- Encargado * -->
+                            <!-- valor sub-total * -->
                             <div>
                                 <label class="block text-xs font-mono text-obsidian-400 uppercase tracking-wider mb-1.5">
                                     Valor sub-total
@@ -268,28 +279,24 @@ const {
     loadCurrentUserProfile
 } = useUsers();
 const { isAdminUser } = useAccess();
+const {
+    projectStateType: projectStates,
+    loadMainStates
+} = useProjectStatesTypes();
 
 const paises = ["Colombia"];
-const estados = [
-    "Vendido",
-    "Fabricación",
-    "Despacho",
-    "Instalacion",
-    "Instalado",
-    "Facturado",
-];
 
 const defaultForm = () => ({
     proyecto: "",
-    pais: "",
+    pais: "Colombia",
     ciudad: "",
     direccion: "",
-    fechaCreacion: new Date().toISOString().slice(0, 10),
+    fechaCreacion: new Date().toLocaleDateString("en-CA", { timeZone: "America/Bogota" }),
     fechaDespacho: "",
     fechaInstalacion: "",
     diasAcordados: null as number | null,
-    encargado: user.value?.uid || "",
-    estado: PROJECT_STATES.IN_PROGRESS.id,
+    encargado: currentUserProfile.value?.roleId === "3" ? currentUserProfile.value.id : "",
+    estado: PROJECT_STATES.IN_PROGRESS.id as number,
     sub_state: "Vendido",
     valorTotal: null as number | null,
     porcentajesPago: "50%, 30%, 20%",
@@ -302,6 +309,7 @@ onMounted(async () => {
     await initAuth();
     loadCurrentUserProfile();
     loadUsers();
+    loadMainStates();
 });
 
 watch(
@@ -321,7 +329,9 @@ const addDays = (dateValue: string, days: number) => {
     if (!year || !month || !day) return "";
     const date = new Date(year, month - 1, day);
     date.setDate(date.getDate() + days);
-    return date.toISOString().slice(0, 10);
+    return date.toLocaleDateString("en-CA", {
+        timeZone: "America/Bogota",
+    });
 };
 
 watch(
@@ -340,10 +350,12 @@ watch(
 );
 
 watch(
-    () => [props.modelValue, props.project, user.value?.uid] as const,
-    ([isOpen, project, uid]) => {
-        if (!isOpen || project || form.encargado || !uid) return;
-        form.encargado = uid;
+    () => [props.modelValue, props.project, currentUserProfile.value] as const,
+    ([isOpen, project, profile]) => {
+        if (!isOpen || project || form.encargado || !profile) return;
+        if (profile.roleId === "3") {
+            form.encargado = profile.id;
+        }
     },
 );
 
@@ -358,9 +370,10 @@ const userDisplayName = (appUser: Pick<AppUser, "displayName" | "email">) =>
 
 const currentUserOption = computed(() => {
     if (!user.value) return null;
+    if (!currentUserProfile.value) return null;
 
     return {
-        value: user.value.uid,
+        value: currentUserProfile.value.id,
         label:
             currentUserProfile.value?.displayName ||
             user.value.displayName ||
@@ -371,10 +384,12 @@ const currentUserOption = computed(() => {
 
 const assigneeOptions = computed(() => {
     const options = canAssignAnyUser.value
-        ? users.value.map((appUser) => ({
-              value: appUser.uid,
+        ? users.value.map((appUser) => {
+            return {
+              value: appUser.id,
               label: userDisplayName(appUser),
-          }))
+          };
+        })
         : currentUserOption.value
           ? [currentUserOption.value]
           : [];
@@ -395,11 +410,15 @@ const assigneeOptions = computed(() => {
     return options;
 });
 
+const availableSubStates = computed(() => {
+    const currentState = projectStates.value.find((s) => s.id === form.estado);
+    return currentState?.sub_state || [];
+});
+
 const isValid = computed(
     () =>
         form.proyecto &&
         form.ciudad &&
-        form.fechaCreacion &&
         form.encargado &&
         form.sub_state,
 );
@@ -407,8 +426,7 @@ const isValid = computed(
 const handleSubmit = () => {
     if (!isValid.value) return;
     const { id: _id, ...projectData } = form as typeof form & { id?: string };
-    console.log("projectData",projectData);
-    
+
     emit("save", {
         ...projectData,
         sub_state: form.sub_state,

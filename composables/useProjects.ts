@@ -16,11 +16,11 @@ export interface Project {
     porcentajesPago?: string;
     pagosRealizados?: number[];
     notas?: string;
-    created_by?: unknown;
-    createdByRef?: unknown;
-    createdByUid?: string;
-    createdByEmail?: string;
-    createdByName?: string;
+    // created_by?: unknown;
+    // createdByRef?: unknown;
+    // createdByUid?: string;
+    // createdByEmail?: string;
+    // createdByName?: string;
     createdAt?: string;
 }
 
@@ -67,9 +67,9 @@ const normalizeProject = (project: Project): Project => ({
     porcentajesPago: "",
     notas: "",
     estado: PROJECT_STATES.IN_PROGRESS.id,
-    createdByUid: "",
-    createdByEmail: "",
-    createdByName: "",
+    // createdByUid: "",
+    // createdByEmail: "",
+    // createdByName: "",
     createdAt: "",
     ...project,
     sub_state:
@@ -119,9 +119,9 @@ const mapDbToProject = (row: any, subStates: Map<number, string>): Project => {
         porcentajesPago: row.agreed_percentages || "",
         pagosRealizados: pagosArr,
         notas: row.notes || "",
-        createdByUid: row.reponsible_id ? String(row.reponsible_id) : "",
-        createdByEmail: row.created_by_email || "",
-        createdByName: row.created_by_name || row.reponsible || "",
+        // createdByUid: row.reponsible_id ? String(row.reponsible_id) : "",
+        // createdByEmail: row.created_by_email || "",
+        // createdByName: row.created_by_name || row.reponsible || "",
         createdAt: row.created_at || "",
     };
 };
@@ -204,7 +204,7 @@ export function useProjects() {
                 const profile = currentUserProfile.value;
                 const canSeeAllProjects = await getIsAdminUser(profile);
 
-                let query = client.from("projects").select("*");
+                let query = client.from("projects").select("*").is("deleted_at", null);
 
                 if (!canSeeAllProjects && profile) {
                     query = query.eq("reponsible_id", Number(profile.id));
@@ -228,11 +228,37 @@ export function useProjects() {
                         .on(
                             "postgres_changes",
                             { event: "*", schema: "public", table: "projects" },
-                            () => {
-                                loadProjects();
+                            (payload) => {
+                                // console.log("Realtime event received! Payload:", payload);
+                                const eventType = payload.eventType;
+
+                                if (eventType === "INSERT" && payload.new) {
+                                    const newProject = mapDbToProject(payload.new, subStateMap);
+                                    projects.value.push(newProject);
+                                    projects.value.sort((a, b) => a.proyecto.localeCompare(b.proyecto, "es", { sensitivity: "base" }));
+                                } else if (eventType === "UPDATE" && payload.new) {
+                                    const index = projects.value.findIndex(p => p.id === String(payload.new.id));
+                                    if (payload.new.deleted_at) {
+                                        if (index !== -1) {
+                                            projects.value.splice(index, 1);
+                                        }
+                                    } else {
+                                        if (index !== -1) {
+                                            projects.value[index] = mapDbToProject(payload.new, subStateMap);
+                                            projects.value.sort((a, b) => a.proyecto.localeCompare(b.proyecto, "es", { sensitivity: "base" }));
+                                        }
+                                    }
+                                } else if (eventType === "DELETE" && payload.old) {
+                                    const index = projects.value.findIndex(p => p.id === String(payload.old.id));
+                                    if (index !== -1) {
+                                        projects.value.splice(index, 1);
+                                    }
+                                }
                             },
                         )
-                        .subscribe();
+                        .subscribe((status) => {
+                            console.log("Supabase Realtime subscription status:", status);
+                        });
                 }
             } else {
                 projects.value = [];
@@ -264,9 +290,9 @@ export function useProjects() {
                 if (!payload.reponsible) {
                     payload.reponsible = profile ? profile.displayName : user.value.email || "";
                 }
-                payload.created_by = profile ? Number(profile.id) : null;
-                payload.created_by_email = user.value.email || "";
-                payload.created_by_name = profile ? profile.displayName : "";
+                // payload.created_by = profile ? Number(profile.id) : null;
+                // payload.created_by_email = user.value.email || "";
+                // payload.created_by_name = profile ? profile.displayName : "";
 
                 const { error: err } = await client.from("projects").insert(payload);
                 if (err) throw err;
@@ -280,6 +306,15 @@ export function useProjects() {
         try {
             const dataWithState = projectPayloadWithState(data);
             const payload = mapProjectToDb(dataWithState, subStateNameToIdMap);
+
+            const currentProject = projects.value.find(p => p.id === String(id));
+            const currentStateId = payload.state !== undefined
+                ? payload.state
+                : (currentProject ? Number(currentProject.estado) : undefined);
+
+            if (currentStateId === 1 && payload.sub_state === 10) {
+                payload.state = 2;
+            }
 
             // Filter out undefined keys to prevent updating them
             const cleanPayload: any = {};
@@ -304,7 +339,7 @@ export function useProjects() {
         try {
             const { error: err } = await client
                 .from("projects")
-                .delete()
+                .update({ deleted_at: new Date().toISOString() })
                 .eq("id", Number(id));
 
             if (err) throw err;

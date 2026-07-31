@@ -160,6 +160,7 @@ export type Database = {
                     city: string | null
                     country: string | null
                     created_at: string
+                    deleted_at: string | null
                     id: number
                     installation_date: string | null
                     name: string
@@ -180,6 +181,7 @@ export type Database = {
                     city?: string | null
                     country?: string | null
                     created_at?: string
+                    deleted_at?: string | null
                     id?: number
                     installation_date?: string | null
                     name: string
@@ -200,6 +202,7 @@ export type Database = {
                     city?: string | null
                     country?: string | null
                     created_at?: string
+                    deleted_at?: string | null
                     id?: number
                     installation_date?: string | null
                     name?: string

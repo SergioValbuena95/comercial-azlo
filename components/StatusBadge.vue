@@ -16,8 +16,8 @@
             @click.stop="toggleDropdown"
             @keydown.escape.prevent.stop="closeDropdown"
         >
-            <span>{{ selectedOption }}</span>
-            <span class="status-caret" aria-hidden="true"></span>
+            <span>{{ selectedOption.name }}</span>
+            <span class="status-caret ml-auto" aria-hidden="true"></span>
         </button>
         <Teleport to="body">
             <Transition name="status-menu">
@@ -31,16 +31,16 @@
                     @click.stop
                 >
                     <button
-                        v-for="option in selectOptions"
-                        :key="option"
+                        v-for="option in options"
+                        :key="option.id"
                         type="button"
                         class="status-option"
                         :class="{ 'status-option-active': option === selectedOption }"
                         role="option"
                         :aria-selected="option === selectedOption"
-                        @click="selectOption(option)"
+                        @click="selectOption(option.id)"
                     >
-                        {{ option }}
+                        {{ option.name }}
                     </button>
                 </div>
             </Transition>
@@ -59,7 +59,7 @@ const props = withDefaults(
     defineProps<{
         estado: string;
         editable?: boolean;
-        options?: string[];
+        options?: any[];
         ariaLabel?: string;
     }>(),
     {
@@ -93,7 +93,9 @@ const closeDropdown = () => {
 
 const selectOption = (option: string) => {
     closeDropdown();
-    if (option !== selectedOption.value) emit("update:estado", option);
+    if (option !== selectedOption.value){
+        emit("update:estado", option);
+    }
 };
 
 const handleDocumentClick = (event: MouseEvent) => {
@@ -154,15 +156,10 @@ const menuStyle = computed(() => ({
     minWidth: `${menuPosition.value.minWidth}px`,
 }));
 
-const normalizedEstado = computed(() => props.estado.trim().toLowerCase());
-
 const selectedOption = computed(() => {
-    if (!normalizedEstado.value) return "";
-
     return (
-        props.options.find(
-            (option) => option.trim().toLowerCase() === normalizedEstado.value,
-        ) || props.estado
+        props.options.find((option) => option.name.toLowerCase() === props.estado.toLowerCase()) ||
+        props.options[0]
     );
 });
 

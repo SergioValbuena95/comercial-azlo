@@ -38,8 +38,7 @@ export function useProjectStatesTypes() {
                     *,
                     sub_state (*)
                 `)
-                .order("name", { ascending: true });
-            console.log("🚀 ~ loadMainStates ~ data:", data)
+                .order("id", { ascending: true });
 
             if (err) throw err;
 
