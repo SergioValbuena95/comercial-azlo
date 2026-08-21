@@ -1,11 +1,11 @@
 <template>
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+    <div class="grid grid-cols-1 gap-6">
         <section v-show="filteredProjects.length" class="animate-on-scroll lg:col-span-8" style="animation-delay: 0.2s">
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
                 <div>
                     <h2 class="section-title text-xl">Acciones</h2>
                     <p class="text-obsidian-500 text-xs font-mono mt-0.5">
-                        {{ filteredProjects.length }} de {{ userProjects.length }}
+                        {{ filteredProjects.length }} de {{ props.projects.length }}
                         registros
                     </p>
                 </div>
@@ -15,7 +15,7 @@
                 <!-- cards -->
                 <div class="block lg:hidden divide-y divide-white/[0.06]">
                     <div
-                        v-if="loading"
+                        v-if="props.loading"
                         class="p-8 text-center text-obsidian-500 font-mono text-sm"
                     >
                         Cargando proyectos...
@@ -81,7 +81,7 @@
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-white/[0.04]">
-                            <tr v-if="loading">
+                            <tr v-if="props.loading">
                                 <td
                                     :colspan="columns.length + 1"
                                     class="px-4 py-12 text-center text-obsidian-500 font-mono text-sm"
@@ -170,7 +170,7 @@
             </div>
         </section>
         <!-- Calendario -->
-        <section v-show="filteredProjects.length" class="animate-on-scroll lg:col-span-4" style="animation-delay: 0.2s">
+        <section v-show="filteredProjects.length" class="animate-on-scroll lg:col-span-4 hidden" style="animation-delay: 0.2s">
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
                 <div>
                     <h2 class="section-title text-xl">Calendario</h2>
@@ -196,24 +196,13 @@
 </template>
 
 <script setup lang="ts">
-import {
-    useProjects,
-    type Project,
-} from "~/composables/useProjects";
+import { type Project } from "~/composables/useProjects";
 
 const props = defineProps<{
+    projects: Project[];
+    loading: boolean;
     searchQuery?: string;
 }>();
-
-const {
-    projects: userProjects,
-    loading,
-    loadProjects
-} = useProjects();
-
-onMounted(() => {
-    loadProjects();
-});
 
 const emit = defineEmits<{
     info: [project: Project];
@@ -224,7 +213,6 @@ const emit = defineEmits<{
     "sub_state-change": [project: Project, subState: string];
 }>();
 
-// Dummy data to replace composables
 const currentPage = ref(1);
 
 const columns = [
@@ -254,8 +242,8 @@ const filteredProjects = computed(() => {
         return Math.ceil((targetDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
     };
 
-    if(userProjects.value){
-        userProjects.value.forEach((project) => {
+    if (props.projects) {
+        props.projects.forEach((project) => {
             const instDiff = getDiffDays(project.fechaInstalacion);
             if (instDiff !== null && instDiff >= 0 && instDiff <= 30) {
                 list.push({
@@ -301,11 +289,13 @@ const calendarColorForAction = (action?: string) => {
 const projectsCalendar = computed(() => {
     return filteredProjects.value.map((project) => {
         const color = calendarColorForAction(project.accion);
+        const date = project.accion.toLowerCase().includes("despacho")
+            ? project.fechaDespacho
+            : project.fechaInstalacion;
 
         return {
-            ...project,
             key: project.id,
-            dates: new Date(project.fechaInstalacion),
+            dates: parseLocalDate(date),
             highlight: {
                 color,
                 fillMode: "solid",
@@ -317,6 +307,15 @@ const projectsCalendar = computed(() => {
         };
     });
 });
+
+const parseLocalDate = (value?: string) => {
+    if (!value) return null;
+
+    const [year, month, day] = value.split("-").map(Number);
+    if (!year || !month || !day) return null;
+
+    return new Date(year, month - 1, day);
+};
 
 const rangeStart = computed(() => 1);
 

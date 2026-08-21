@@ -95,13 +95,13 @@
                     <StatCard
                         label="Cerrados"
                         :value="stats.closed"
-                        icon="🗂"
+                        icon="🤝"
                         accent-color="#a29bfe"
                         :sub="`${percent(stats.closed, stats.total)}% facturados`"
                     />
                 </div>
                 <!-- KPI Grid -->
-                <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="grid grid-cols-2 lg:grid-cols-3 gap-4">
                     <StatCard
                         class="col-span-2 lg:col-span-1"
                         label="Total Vendido"
@@ -132,6 +132,18 @@
                         :progress="monthlyGoalProgress"
                         progress-label="Cumplimiento"
                     />
+                    <div class="glass-card calendar-card p-4">
+                        <div>
+                            <p>Acciones</p>
+                            <VCalendar
+                                expanded
+                                borderless
+                                transparent
+                                locale="es"
+                                :attributes="projectsCalendar"
+                            />
+                        </div>
+                    </div>
                 </div>
             </section>
             <ProjectsTable
@@ -333,6 +345,49 @@ const formatCurrency = (value?: number | string | null) => {
         maximumFractionDigits: 0,
     }).format(amount);
 };
+
+const parseLocalDate = (value?: string) => {
+    if (!value) return null;
+
+    const [year, month, day] = value.split("-").map(Number);
+    if (!year || !month || !day) return null;
+
+    return new Date(year, month - 1, day);
+};
+
+const projectsCalendar = computed(() =>
+    projects.value.flatMap((project) => {
+        const attributes = [];
+        const installationDate = parseLocalDate(project.fechaInstalacion);
+        const shipmentDate = parseLocalDate(project.fechaDespacho);
+
+        if (installationDate) {
+            attributes.push({
+                key: `${project.id}-installation`,
+                dates: installationDate,
+                highlight: { color: "orange", fillMode: "solid" },
+                popover: {
+                    label: `${project.proyecto} - InstalaciÃ³n`,
+                    hideIndicator: true,
+                },
+            });
+        }
+
+        if (shipmentDate) {
+            attributes.push({
+                key: `${project.id}-shipment`,
+                dates: shipmentDate,
+                highlight: { color: "red", fillMode: "solid" },
+                popover: {
+                    label: `${project.proyecto} - Despacho`,
+                    hideIndicator: true,
+                },
+            });
+        }
+
+        return attributes;
+    }),
+);
 
 
 const openCreate = () => {
