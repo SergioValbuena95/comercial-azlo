@@ -391,6 +391,9 @@ export function useProjects() {
 
         const valueByMonth = projects.value.reduce(
             (acc, p) => {
+                if (Number(p.estado) === PROJECT_STATES.IN_PROGRESS.id)
+                    return acc;
+
                 const month = p.fechaCreacion.slice(0, 7);
                 acc[month] = (acc[month] || 0) + Number(p.valorTotal || 0);
                 return acc;
@@ -398,11 +401,21 @@ export function useProjects() {
             {} as Record<string, number>,
         );
         const totalSoldCurrentYear = projects.value.reduce((sum, p) => {
-            if (!p.fechaCreacion.startsWith(currentYear)) return sum;
+            if (
+                Number(p.estado) === PROJECT_STATES.IN_PROGRESS.id ||
+                !p.fechaCreacion.startsWith(currentYear)
+            )
+                return sum;
+
             return sum + Number(p.valorTotal || 0);
         }, 0);
         const totalSoldCurrentMonth = projects.value.reduce((sum, p) => {
-            if (!p.fechaCreacion.startsWith(currentMonth)) return sum;
+            if (
+                Number(p.estado) === PROJECT_STATES.IN_PROGRESS.id ||
+                !p.fechaCreacion.startsWith(currentMonth)
+            )
+                return sum;
+
             return sum + Number(p.valorTotal || 0);
         }, 0);
 
