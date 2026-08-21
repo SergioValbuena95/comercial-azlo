@@ -129,6 +129,30 @@ body {
         border-radius: inherit;
         z-index: 0;
     }
+
+    .calendar-card .vc-container {
+        width: 100%;
+        background-color: transparent;
+        border: 0;
+        font-family: "Montserrat", sans-serif;
+        color: var(--text-primary);
+        --vc-header-title-color: var(--text-primary);
+        --vc-header-arrow-color: var(--text-secondary);
+        --vc-header-arrow-hover-bg: rgba(255, 255, 255, 0.06);
+        --vc-weekday-color: var(--text-secondary);
+        --vc-day-content-hover-bg: rgba(0, 85, 113, 0.18);
+        --vc-focus-ring: 0 0 0 2px rgba(0, 85, 113, 0.35);
+    }
+
+    .calendar-card .vc-day-content {
+        color: var(--text-primary);
+    }
+
+    .calendar-card .vc-day.is-not-in-month .vc-day-content {
+        color: var(--text-secondary);
+        opacity: 0.45;
+    }
+
 }
 
 /* Status badges */
@@ -266,4 +290,9 @@ body {
 :root.theme-light .bg-obsidian-800,
 :root.theme-light .bg-obsidian-700\/60 {
     background-color: #e7eff2 !important;
+}
+
+:root.theme-light .calendar-card .vc-container {
+    --vc-header-arrow-hover-bg: rgba(0, 85, 113, 0.08);
+    --vc-day-content-hover-bg: rgba(0, 85, 113, 0.1);
 }

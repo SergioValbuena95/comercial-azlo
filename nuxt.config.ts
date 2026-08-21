@@ -16,6 +16,7 @@ export default defineNuxtConfig({
     ],
 
     devtools: { enabled: true },
+    css: ["v-calendar/style.css"],
     vite: {
         server: {
             allowedHosts: true,
@@ -95,6 +96,11 @@ export default defineNuxtConfig({
                 {
                     rel: "stylesheet",
                     href: "https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap",
+                },
+                {
+                    rel: "icon",
+                    type: "image/x-icon",
+                    href: "/favicon.ico"
                 },
             ],
         },
