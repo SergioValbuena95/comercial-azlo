@@ -355,8 +355,8 @@ const parseLocalDate = (value?: string) => {
     return new Date(year, month - 1, day);
 };
 
-const projectsCalendar = computed(() =>
-    projects.value.flatMap((project) => {
+const projectsCalendar = computed(() => [
+    ...projects.value.flatMap((project) => {
         const attributes = [];
         const installationDate = parseLocalDate(project.fechaInstalacion);
         const shipmentDate = parseLocalDate(project.fechaDespacho);
@@ -365,9 +365,9 @@ const projectsCalendar = computed(() =>
             attributes.push({
                 key: `${project.id}-installation`,
                 dates: installationDate,
-                highlight: { color: "orange", fillMode: "solid" },
+                dot: { color: "orange" },
                 popover: {
-                    label: `${project.proyecto} - InstalaciÃ³n`,
+                    label: `${project.proyecto} - Instalación`,
                     hideIndicator: true,
                 },
             });
@@ -377,7 +377,7 @@ const projectsCalendar = computed(() =>
             attributes.push({
                 key: `${project.id}-shipment`,
                 dates: shipmentDate,
-                highlight: { color: "red", fillMode: "solid" },
+                dot: { color: "red" },
                 popover: {
                     label: `${project.proyecto} - Despacho`,
                     hideIndicator: true,
@@ -387,7 +387,13 @@ const projectsCalendar = computed(() =>
 
         return attributes;
     }),
-);
+    {
+        key: "today",
+        dates: new Date(),
+        highlight: { color: "blue", fillMode: "solid" },
+        order: 10,
+    },
+]);
 
 
 const openCreate = () => {
