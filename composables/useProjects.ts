@@ -33,6 +33,14 @@ export const PROJECT_STATES = {
         id: 2,
         label: "Vendido",
     },
+    CHECK_BOOK: {
+        id: 3,
+        label: "Cartera",
+    },
+    DONE: {
+        id: 4,
+        label: "Finalizado",
+    },
 } as const;
 
 export type ProjectStateId =
@@ -82,9 +90,15 @@ const normalizeProject = (project: Project): Project => ({
         : [],
 });
 
-export const projectSubState = (project: Project) =>
-    project.sub_state ||
-    (typeof project.estado === "string" ? project.estado : "");
+export const projectSubState = (project: Project) => {
+    if (project.sub_state) return project.sub_state;
+
+    if (Number(project.estado) === PROJECT_STATES.DONE.id) {
+        return projectStateLabel(project.estado);
+    }
+
+    return typeof project.estado === "string" ? project.estado : "";
+}
 
 const subStateMap = new Map<number, string>();
 const subStateNameToIdMap = new Map<string, number>();
@@ -314,6 +328,15 @@ export function useProjects() {
 
             if (currentStateId === 1 && payload.sub_state === 10) {
                 payload.state = 2;
+            }
+
+            if (currentStateId === 2 && payload.sub_state === 6) {
+                payload.state = 3;
+            }
+
+            if (currentStateId === 3 && payload.sub_state === 12) {
+                payload.state = 4;
+                payload.sub_state = null;
             }
 
             // Filter out undefined keys to prevent updating them

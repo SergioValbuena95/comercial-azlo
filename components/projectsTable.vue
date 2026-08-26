@@ -125,7 +125,7 @@
                         </p>
                         <StatusBadge
                             :estado="projectSubState(project)"
-                            editable
+                            :editable="project.estado != 4"
                             :options="subStateOptions(project)"
                             :aria-label="`Actualizar estado de ${project.proyecto}`"
                             @update:estado="handleSubStateChange(project, $event)"
@@ -296,7 +296,7 @@
                             <td class="px-4 py-3.5">
                                 <StatusBadge
                                     :estado="projectSubState(project)"
-                                    editable
+                                    :editable="project.estado !== 4"
                                     :options="subStateOptions(project)"
                                     :aria-label="`Actualizar estado de ${project.proyecto}`"
                                     @update:estado="handleSubStateChange(project, $event)"
@@ -464,7 +464,7 @@ const { isAdminUser } = useAccess();
 const filterStatus = ref("");
 const filterCountry = ref("");
 const filterResponsible = ref("");
-const activeProjectTabMain = ref<"inProgress" | "sold" | "all" >("all");
+const activeProjectTabMain = ref<"inProgress" | "sold" | "all" | "checkbook" | "done" >("all");
 const activeProjectTab = ref<"inProgress" | "sold" | "all">("all");
 const sortKey = ref("fechaCreacion");
 const sortDir = ref<"asc" | "desc">("desc");
@@ -562,25 +562,39 @@ const isInProgressProject = (project: Project) =>
 const isSoldProject = (project: Project) =>
     projectStateId(project) === PROJECT_STATES.SOLD.id;
 
+const isCheckBookProject = (project: Project) =>
+    projectStateId(project) === PROJECT_STATES.CHECK_BOOK.id;
+
+const isDoneProject = (project: Project) =>
+    projectStateId(project) === PROJECT_STATES.DONE.id;
+
 const projectTabs = computed(() => {
     const soldCount = userProjects.value.filter(isSoldProject).length;
-    const inProgressCount = userProjects.value.filter(isInProgressProject).length;
+    const inProgressCount = userProjects.value.filter(isCheckBookProject).length;
+    const checkBookCount = userProjects.value.filter(isCheckBookProject).length;
+
 
     return [
         { key: "inProgress" as const, label: "Activos", count: inProgressCount },
         { key: "sold" as const, label: "Facturados", count: soldCount },
         { key: "all" as const, label: "Todos", count: userProjects.value.length },
+        { key: "checkbook" as const, label: "Cartera", count: checkBookCount },
+
     ];
 });
 
 const projectTabsMain = computed(() => {
     const soldCount = userProjects.value.filter(isSoldProject).length;
     const inProgressCount = userProjects.value.filter(isInProgressProject).length;
+    const checkBookCount = userProjects.value.filter(isCheckBookProject).length;
+    const doneCount = userProjects.value.filter(isDoneProject).length;
 
     return [
         { key: "all" as const, label: "Todos", count: userProjects.value.length },
         { key: "inProgress" as const, label: "En tramite", count: inProgressCount },
         { key: "sold" as const, label: "Vendidos", count: soldCount },
+        { key: "checkbook" as const, label: "Cartera", count: checkBookCount },
+        { key: "done" as const, label: "Finalizados", count: doneCount },
     ];
 });
 
@@ -597,9 +611,15 @@ const hasFilters = computed(
 const filteredProjects = computed(() => {
     let list = [...userProjects.value];
 
-    if (activeProjectTabMain.value === "inProgress")
-        list = list.filter(isInProgressProject);
-    if (activeProjectTabMain.value === "sold") list = list.filter(isSoldProject);
+    const filter = {
+        inProgress: isInProgressProject,
+        sold: isSoldProject,
+        checkbook: isCheckBookProject,
+        done: isDoneProject,
+    }[activeProjectTabMain.value];
+
+    list = filter ? list.filter(filter) : list;
+
 
     if (activeProjectTab.value === "inProgress")
         list = list.filter(isInProgressProject);

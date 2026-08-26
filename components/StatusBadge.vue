@@ -16,7 +16,7 @@
             @click.stop="toggleDropdown"
             @keydown.escape.prevent.stop="closeDropdown"
         >
-            <span>{{ selectedOption.name }}</span>
+            <span>{{ selectedOption?.name || '' }}</span>
             <span class="status-caret ml-auto" aria-hidden="true"></span>
         </button>
         <Teleport to="body">
@@ -221,6 +221,10 @@ const badgeClass = computed(() => {
             "label-badge bg-amber-500/15 text-amber-400 border border-amber-500/20",
         Cotizado:
             "label-badge bg-orange-500/15 text-orange-400 border border-orange-500/20",
+        Cartera:
+            "label-badge bg-green-200/15 text-green-200 border border-green-200/20",
+        Finalizado:
+            "label-badge bg-green-500/15 text-green-400 border border-green-500/20",
     };
 
     return (
@@ -245,6 +249,8 @@ const dotClass = computed(() => {
         Cerrado: "bg-obsidian-500",
         Prospecto: "bg-amber-400",
         Cotizado: "bg-orange-400",
+        Cartera: "bg-green-200",
+        Finalizado: "bg-green-400",
     };
 
     return map[statusKey.value] || "bg-obsidian-500";
