@@ -217,7 +217,9 @@
         <NotesModal
             v-model="showNotesModal"
             :project-title="notesProject?.proyecto"
-            :notes="notesProject?.notas"
+            :historial-notes="historialNotes"
+            :loading="notesLoading"
+            :saving="notesSaving"
             @save="handleNotesSave"
         />
 
@@ -269,6 +271,7 @@
 
 <script setup lang="ts">
 import { useProjects, type Project } from "~/composables/useProjects";
+import { useProjectNotes } from "~/composables/useProjectNotes";
 import { ref } from 'vue';
 
 const {
@@ -281,6 +284,13 @@ const {
     deleteProject,
 } = useProjects();
 
+const {
+    historialNotes,
+    loading: notesLoading,
+    fetchNotes,
+    addNote,
+} = useProjectNotes();
+
 // State
 const showModal = ref(false);
 const showNotesModal = ref(false);
@@ -289,6 +299,7 @@ const editingProject = ref<Project | null>(null);
 const deletingProject = ref<Project | null>(null);
 const notesProject = ref<Project | null>(null);
 const infoProject = ref<Project | null>(null);
+const notesSaving = ref(false);
 
 const searchQuery = ref("");
 const { initTheme } = useTheme();
@@ -406,9 +417,12 @@ const openEdit = (project: Project) => {
     showModal.value = true;
 };
 
-const openNotes = (project: Project) => {
+const openNotes = async (project: Project) => {
     notesProject.value = project;
     showNotesModal.value = true;
+    if(project.id){
+        await fetchNotes(Number(project.id));
+    }
 };
 
 const openInfo = (project: Project) => {
@@ -435,10 +449,11 @@ const handleSave = async (data: Omit<Project, "id">) => {
     editingProject.value = null;
 };
 
-const handleNotesSave = async (notas: string) => {
+const handleNotesSave = async (note: string) => {
     if (!notesProject.value?.id) return;
-    await updateProject(notesProject.value.id, { notas });
-    notesProject.value = { ...notesProject.value, notas };
+    notesSaving.value = true;
+    await addNote(Number(notesProject.value.id), note);
+    notesSaving.value = false;
 };
 
 const togglePayment = async (project: Project, pagosRealizados: number[]) => {

@@ -43,7 +43,6 @@ export type Database = {
                     id: number
                     note: string | null
                     project_id: number | null
-                    type_id: number | null
                 }
                 Insert: {
                     created_at?: string | null
@@ -52,7 +51,6 @@ export type Database = {
                     id?: number
                     note?: string | null
                     project_id?: number | null
-                    type_id?: number | null
                 }
                 Update: {
                     created_at?: string | null
@@ -61,7 +59,6 @@ export type Database = {
                     id?: number
                     note?: string | null
                     project_id?: number | null
-                    type_id?: number | null
                 }
                 Relationships: [
                     {
@@ -76,13 +73,6 @@ export type Database = {
                         columns: ["project_id"]
                         isOneToOne: false
                         referencedRelation: "projects"
-                        referencedColumns: ["id"]
-                    },
-                    {
-                        foreignKeyName: "notes_type_id_fkey"
-                        columns: ["type_id"]
-                        isOneToOne: false
-                        referencedRelation: "note_types"
                         referencedColumns: ["id"]
                     },
                 ]

@@ -7,147 +7,136 @@
                 class="fixed inset-0 z-50 flex items-center justify-center p-4"
                 @click.self="$emit('update:modelValue', false)"
             >
-                <div
-                    class="absolute inset-0 bg-black/70 backdrop-blur-sm"
-                ></div>
+                <div class="absolute inset-0 bg-black/70 backdrop-blur-sm"></div>
 
-                <div
-                    class="relative z-10 w-full max-w-md glass-card border-white/10 shadow-2xl"
+                <section
+                    class="relative z-10 flex max-h-[85vh] w-full max-w-xl flex-col overflow-hidden glass-card border-white/10 shadow-2xl"
+                    aria-labelledby="notes-modal-title"
                 >
-                    <div
-                        class="flex items-start justify-between gap-4 p-5 border-b border-white/[0.07]"
-                    >
+                    <header class="flex items-start justify-between gap-4 border-b border-white/[0.07] p-5">
                         <div>
-                            <h2
-                                class="font-display font-bold text-white text-base"
-                            >
-                                Notas
+                            <p class="font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-acid-300">
+                                Historial
+                            </p>
+                            <h2 id="notes-modal-title" class="mt-1 font-display text-base font-bold text-white">
+                                Notas del proyecto
                             </h2>
-                            <p
-                                class="text-obsidian-500 text-xs font-mono mt-1 truncate max-w-xs"
-                            >
+                            <p class="mt-1 max-w-xs truncate font-mono text-xs text-obsidian-500">
                                 {{ projectTitle || "Proyecto sin nombre" }}
                             </p>
                         </div>
                         <button
                             type="button"
-                            class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/5 text-obsidian-400 hover:text-white transition-colors text-lg"
+                            class="flex h-8 w-8 items-center justify-center rounded-lg text-lg text-obsidian-400 transition-colors hover:bg-white/5 hover:text-white"
                             aria-label="Cerrar notas"
                             @click="$emit('update:modelValue', false)"
                         >
-                            x
+                            ×
                         </button>
-                    </div>
+                    </header>
 
-                    <form class="p-5" @submit.prevent="handleSubmit">
-                        <p
-                            v-if="cleanNotes && !isEditing"
-                            class="text-sm leading-relaxed text-obsidian-200 whitespace-pre-wrap"
-                        >
-                            {{ cleanNotes }}
-                        </p>
-                        <div
-                            v-if="cleanNotes && !isEditing"
-                            class="flex justify-end mt-5"
-                        >
+                    <form class="border-b border-white/[0.07] p-5" @submit.prevent="handleSubmit">
+                        <label for="new-project-note" class="mb-2 block text-sm font-semibold text-obsidian-200">
+                            Nueva nota
+                        </label>
+                        <textarea
+                            id="new-project-note"
+                            v-model="draftNote"
+                            class="input-dark min-h-24 resize-y"
+                            placeholder="Escribe una actualización para este proyecto…"
+                        />
+                        <div class="mt-3 flex items-center justify-between gap-3">
+                            <p class="text-xs text-obsidian-500">
+                                La nota se añadirá al historial.
+                            </p>
                             <button
-                                type="button"
-                                class="btn-ghost"
-                                @click="startEditing"
+                                type="submit"
+                                class="btn-primary shrink-0 disabled:cursor-not-allowed disabled:opacity-40"
+                                :disabled="!draftNote.trim() || saving"
                             >
-                                Editar nota
+                                {{ saving ? "Guardando…" : "Guardar nota" }}
                             </button>
                         </div>
-                        <div v-else class="space-y-4">
-                            <p
-                                v-if="!cleanNotes"
-                                class="text-sm text-obsidian-500 font-mono"
-                            >
-                                Sin notas registradas.
-                            </p>
-                            <textarea
-                                v-model="draftNotes"
-                                class="input-dark min-h-28 resize-y"
-                                placeholder="Agregar nota para este proyecto"
-                            ></textarea>
-                            <div class="flex justify-end gap-3">
-                                <button
-                                    type="button"
-                                    class="btn-ghost"
-                                    @click="cancelEditing"
-                                >
-                                    Cancelar
-                                </button>
-                                <button
-                                    type="submit"
-                                    class="btn-primary disabled:opacity-40 disabled:cursor-not-allowed"
-                                    :disabled="!draftNotes.trim()"
-                                >
-                                    Guardar nota
-                                </button>
-                            </div>
-                        </div>
                     </form>
-                </div>
+
+                    <div class="min-h-0 flex-1 overflow-y-auto p-5">
+                        <div v-if="loading" class="py-8 text-center font-mono text-xs text-obsidian-500">
+                            Cargando historial…
+                        </div>
+                        <div
+                            v-else-if="!historialNotes.length"
+                            class="rounded-xl border border-dashed border-white/10 bg-white/[0.02] px-4 py-8 text-center"
+                        >
+                            <p class="text-sm text-obsidian-300">Aún no hay notas registradas.</p>
+                            <p class="mt-1 text-xs text-obsidian-500">Agrega la primera actualización arriba.</p>
+                        </div>
+                        <ol v-else class="relative ml-2 space-y-6 border-l border-white/10 pl-6">
+                            <li v-for="note in historialNotes" :key="note.id" class="relative">
+                                <span
+                                    class="absolute -left-[31px] top-1.5 h-3 w-3 rounded-full border-2 border-obsidian-900 bg-acid-400"
+                                    aria-hidden="true"
+                                ></span>
+                                <div class="rounded-xl border border-white/[0.07] bg-white/[0.025] p-4">
+                                    <time class="font-mono text-[11px] text-obsidian-500" :datetime="formatDateTime(note.created_at) || undefined">
+                                        {{ formatDateTime(note.created_at) }}
+                                    </time>
+                                    <p class="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-obsidian-200">
+                                        {{ note.note || "Nota sin contenido" }}
+                                    </p>
+                                </div>
+                            </li>
+                        </ol>
+                    </div>
+                </section>
             </div>
         </Transition>
     </Teleport>
 </template>
 
 <script setup lang="ts">
-const props = defineProps<{
+import type { Tables } from "~/types/database.types";
+import { formatDate } from "~/utils/date";
+
+type Note = Tables<"notes">;
+
+const props = withDefaults(defineProps<{
     modelValue: boolean;
     projectTitle?: string;
-    notes?: string;
-}>();
+    historialNotes?: Note[];
+    loading?: boolean;
+    saving?: boolean;
+}>(), {
+    historialNotes: () => [],
+    loading: false,
+    saving: false,
+});
 
 const emit = defineEmits<{
     "update:modelValue": [value: boolean];
-    save: [notes: string];
+    save: [note: string];
 }>();
 
-const cleanNotes = computed(() => props.notes?.trim() || "");
-const draftNotes = ref("");
-const isEditing = ref(false);
+const draftNote = ref("");
 
-watch(
-    () => props.modelValue,
-    (isOpen) => {
-        if (isOpen) {
-            draftNotes.value = cleanNotes.value;
-            isEditing.value = !cleanNotes.value;
-        }
-    },
-);
+watch(() => props.modelValue, (isOpen) => {
+    if (!isOpen) draftNote.value = "";
+});
 
-watch(
-    () => props.notes,
-    (notes) => {
-        if (!props.modelValue || isEditing.value) return;
-        draftNotes.value = notes?.trim() || "";
-    },
-);
+const formatNoteDate = (value: string | null) => {
+    if (!value) return "Fecha no disponible";
 
-const startEditing = () => {
-    draftNotes.value = cleanNotes.value;
-    isEditing.value = true;
-};
-
-const cancelEditing = () => {
-    if (cleanNotes.value) {
-        draftNotes.value = cleanNotes.value;
-        isEditing.value = false;
-        return;
-    }
-
-    emit("update:modelValue", false);
+    return new Intl.DateTimeFormat("es-CO", {
+        dateStyle: "medium",
+        timeStyle: "short",
+    }).format(new Date(value));
 };
 
 const handleSubmit = () => {
-    const notes = draftNotes.value.trim();
-    if (!notes) return;
-    emit("save", notes);
-    isEditing.value = false;
+    const note = draftNote.value.trim();
+    if (!note || props.saving) return;
+
+    emit("save", note);
+    draftNote.value = "";
 };
 </script>
 
