@@ -71,16 +71,55 @@
                             <p class="mt-1 text-xs text-obsidian-500">Agrega la primera actualización arriba.</p>
                         </div>
                         <ol v-else class="relative ml-2 space-y-6 border-l border-white/10 pl-6">
-                            <li v-for="note in historialNotes" :key="note.id" class="relative">
+                            <li
+                                v-for="note in historialNotes"
+                                :key="note.id"
+                                class="relative"
+                                @dblclick="startEditing(note)"
+                            >
                                 <span
                                     class="absolute -left-[31px] top-1.5 h-3 w-3 rounded-full border-2 border-obsidian-900 bg-acid-400"
                                     aria-hidden="true"
                                 ></span>
                                 <div class="rounded-xl border border-white/[0.07] bg-white/[0.025] p-4">
-                                    <time class="font-mono text-[11px] text-obsidian-500" :datetime="formatDateTime(note.created_at) || undefined">
-                                        {{ formatDateTime(note.created_at) }}
-                                    </time>
-                                    <p class="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-obsidian-200">
+                                    <div class="flex items-center justify-between gap-3">
+                                        <time class="font-mono text-[11px] text-obsidian-500" :datetime="note.created_at || undefined">
+                                            {{ formatNoteDate(note.created_at) }}
+                                        </time>
+                                        <DeleteButton
+                                            :hover="!saving"
+                                            :disabled="saving"
+                                            @click.stop="emit('delete', note.id)"
+                                            @dblclick.stop
+                                        />
+                                    </div>
+                                    <form
+                                        v-if="editingNoteId === note.id"
+                                        class="mt-2"
+                                        @submit.prevent="saveEdit(note.id)"
+                                    >
+                                        <textarea
+                                            v-model="editingNote"
+                                            class="input-dark min-h-24 w-full resize-y"
+                                            aria-label="Editar nota"
+                                            autofocus
+                                            @dblclick.stop
+                                            @keydown.enter.exact.prevent="saveEdit(note.id)"
+                                        />
+                                        <div class="mt-3 flex justify-end gap-2">
+                                            <button type="button" class="btn-ghost" :disabled="saving" @click="cancelEdit">
+                                                Cancelar
+                                            </button>
+                                            <button
+                                                type="submit"
+                                                class="btn-primary disabled:cursor-not-allowed disabled:opacity-40"
+                                                :disabled="!editingNote.trim() || saving"
+                                            >
+                                                {{ saving ? "Guardando..." : "Guardar" }}
+                                            </button>
+                                        </div>
+                                    </form>
+                                    <p v-else class="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-obsidian-200">
                                         {{ note.note || "Nota sin contenido" }}
                                     </p>
                                 </div>
@@ -95,8 +134,6 @@
 
 <script setup lang="ts">
 import type { Tables } from "~/types/database.types";
-import { formatDate } from "~/utils/date";
-
 type Note = Tables<"notes">;
 
 const props = withDefaults(defineProps<{
@@ -114,12 +151,19 @@ const props = withDefaults(defineProps<{
 const emit = defineEmits<{
     "update:modelValue": [value: boolean];
     save: [note: string];
+    update: [id: number, note: string];
+    delete: [id: number];
 }>();
 
 const draftNote = ref("");
+const editingNoteId = ref<number | null>(null);
+const editingNote = ref("");
 
 watch(() => props.modelValue, (isOpen) => {
-    if (!isOpen) draftNote.value = "";
+    if (!isOpen) {
+        draftNote.value = "";
+        cancelEdit();
+    }
 });
 
 const formatNoteDate = (value: string | null) => {
@@ -137,6 +181,26 @@ const handleSubmit = () => {
 
     emit("save", note);
     draftNote.value = "";
+};
+
+const startEditing = (note: Note) => {
+    if (props.saving) return;
+
+    editingNoteId.value = note.id;
+    editingNote.value = note.note || "";
+};
+
+const cancelEdit = () => {
+    editingNoteId.value = null;
+    editingNote.value = "";
+};
+
+const saveEdit = (id: number) => {
+    const note = editingNote.value.trim();
+    if (!note || props.saving) return;
+
+    emit("update", id, note);
+    cancelEdit();
 };
 </script>
 

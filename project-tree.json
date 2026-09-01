@@ -1,0 +1,38 @@
+{
+  "name": "comercial-dashboard",
+  "type": "directory",
+  "generatedFrom": "tracked project files",
+  "excludedDirectories": [".git", "node_modules", ".nuxt", ".output", "dist", "coverage"],
+  "children": [
+    {"name": ".env.example", "type": "file"},
+    {"name": ".github", "type": "directory", "children": [{"name": "workflows", "type": "directory", "children": [{"name": "deploy.yml", "type": "file"}]}]},
+    {"name": ".gitignore", "type": "file"},
+    {"name": ".vscode", "type": "directory", "children": [{"name": "settings.json", "type": "file"}]},
+    {"name": "CODING_SESSION_BASE.md", "type": "file"},
+    {"name": "PROJECT.md", "type": "file"},
+    {"name": "README.md", "type": "file"},
+    {"name": "TODO.md", "type": "file"},
+    {"name": "app.vue", "type": "file"},
+    {"name": "assets", "type": "directory", "children": [
+      {"name": "css", "type": "directory", "children": [{"name": "main.css", "type": "file"}]},
+      {"name": "icons", "type": "directory", "children": [{"name": "edit.svg", "type": "file"}]}
+    ]},
+    {"name": "components", "type": "directory", "children": [
+      {"name": "AccountMenu.vue", "type": "file"}, {"name": "ActivitiesTable.vue", "type": "file"}, {"name": "Charts.vue", "type": "file"}, {"name": "InfoItem.vue", "type": "file"}, {"name": "NotesModal.vue", "type": "file"}, {"name": "ProjectInfoModal.vue", "type": "file"}, {"name": "ProjectModal.vue", "type": "file"}, {"name": "StatCard.vue", "type": "file"}, {"name": "StatusBadge.vue", "type": "file"}, {"name": "ThemeToggle.vue", "type": "file"},
+      {"name": "buttons", "type": "directory", "children": [{"name": "DeleteButton.vue", "type": "file"}, {"name": "EditButton.vue", "type": "file"}]},
+      {"name": "projectsTable.vue", "type": "file"},
+      {"name": "settings", "type": "directory", "children": [{"name": "ProductTypesSettingsPanel.vue", "type": "file"}, {"name": "ProductsSettingsPanel.vue", "type": "file"}, {"name": "ProjectSettingsStatesPanel.vue", "type": "file"}, {"name": "SettingsLayout.vue", "type": "file"}, {"name": "UsersSettingsPanel.vue", "type": "file"}]}
+    ]},
+    {"name": "composables", "type": "directory", "children": [{"name": "useAccess.ts", "type": "file"}, {"name": "useAuth.ts", "type": "file"}, {"name": "useProductTypes.ts", "type": "file"}, {"name": "useProducts.ts", "type": "file"}, {"name": "useProjectNotes.ts", "type": "file"}, {"name": "useProjectStates.ts", "type": "file"}, {"name": "useProjects.ts", "type": "file"}, {"name": "useRoles.ts", "type": "file"}, {"name": "useStorageUpload.ts", "type": "file"}, {"name": "useTheme.ts", "type": "file"}, {"name": "useUsers.ts", "type": "file"}]},
+    {"name": "env.d.ts", "type": "file"},
+    {"name": "middleware", "type": "directory", "children": [{"name": "auth.global.ts", "type": "file"}]},
+    {"name": "nuxt.config.ts", "type": "file"}, {"name": "package-lock.json", "type": "file"}, {"name": "package.json", "type": "file"},
+    {"name": "pages", "type": "directory", "children": [{"name": "index.vue", "type": "file"}, {"name": "login.vue", "type": "file"}, {"name": "settings", "type": "directory", "children": [{"name": "index.vue", "type": "file"}, {"name": "products", "type": "directory", "children": [{"name": "index.vue", "type": "file"}, {"name": "types.vue", "type": "file"}]}, {"name": "projects", "type": "directory", "children": [{"name": "index.vue", "type": "file"}, {"name": "states", "type": "directory", "children": [{"name": "index.vue", "type": "file"}]}, {"name": "types.vue", "type": "file"}]}, {"name": "users.vue", "type": "file"}]}, {"name": "users.vue", "type": "file"}]},
+    {"name": "plugins", "type": "directory", "children": [{"name": "calendar.client.ts", "type": "file"}, {"name": "firebase.client.ts", "type": "file"}, {"name": "supabase.client.ts", "type": "file"}, {"name": "theme.client.ts", "type": "file"}]},
+    {"name": "public", "type": "directory", "children": [{"name": "favicon.ico", "type": "file"}, {"name": "favicon.png", "type": "file"}]},
+    {"name": "server", "type": "directory", "children": [{"name": "api", "type": "directory", "children": [{"name": "email", "type": "directory", "children": [{"name": "send.post.ts", "type": "file"}]}]}]},
+    {"name": "skills-lock.json", "type": "file"}, {"name": "tailwind.config.cjs", "type": "file"}, {"name": "tsconfig.json", "type": "file"},
+    {"name": "types", "type": "directory", "children": [{"name": "database.types.ts", "type": "file"}]},
+    {"name": "utils", "type": "directory", "children": [{"name": "date.ts", "type": "file"}, {"name": "send.post.ts", "type": "file"}]}
+  ]
+}

@@ -58,11 +58,61 @@ export const useProjectNotes = () => {
         }
     };
 
+    const updateNote = async (id: number, note: string): Promise<Note | null> => {
+        error.value = null;
+
+        try {
+            const { data, error: supabaseError } = await client
+                .from("notes")
+                .update({ note })
+                .eq("id", id)
+                .select()
+                .single();
+
+            if (supabaseError) throw supabaseError;
+
+            const noteIndex = historialNotes.value.findIndex(
+                (projectNote) => projectNote.id === id,
+            );
+            if (noteIndex !== -1) historialNotes.value[noteIndex] = data;
+
+            return data;
+        } catch (err) {
+            console.error("Error updating project note:", err);
+            error.value = err instanceof Error ? err.message : "Failed to update project note";
+            return null;
+        }
+    };
+
+    const deleteNote = async (id: number): Promise<boolean> => {
+        error.value = null;
+
+        try {
+            const { error: supabaseError } = await client
+                .from("notes")
+                .update({ deleted_at: new Date().toISOString() })
+                .eq("id", id);
+
+            if (supabaseError) throw supabaseError;
+
+            historialNotes.value = historialNotes.value.filter(
+                (projectNote) => projectNote.id !== id,
+            );
+            return true;
+        } catch (err) {
+            console.error("Error deleting project note:", err);
+            error.value = err instanceof Error ? err.message : "Failed to delete project note";
+            return false;
+        }
+    };
+
     return {
         historialNotes,
         loading,
         error,
         fetchNotes,
         addNote,
+        updateNote,
+        deleteNote,
     };
 };

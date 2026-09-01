@@ -221,6 +221,8 @@
             :loading="notesLoading"
             :saving="notesSaving"
             @save="handleNotesSave"
+            @update="handleNoteUpdate"
+            @delete="handleNoteDelete"
         />
 
         <ProjectInfoModal
@@ -289,6 +291,8 @@ const {
     loading: notesLoading,
     fetchNotes,
     addNote,
+    updateNote,
+    deleteNote,
 } = useProjectNotes();
 
 // State
@@ -453,6 +457,18 @@ const handleNotesSave = async (note: string) => {
     if (!notesProject.value?.id) return;
     notesSaving.value = true;
     await addNote(Number(notesProject.value.id), note);
+    notesSaving.value = false;
+};
+
+const handleNoteUpdate = async (id: number, note: string) => {
+    notesSaving.value = true;
+    await updateNote(id, note);
+    notesSaving.value = false;
+};
+
+const handleNoteDelete = async (id: number) => {
+    notesSaving.value = true;
+    await deleteNote(id);
     notesSaving.value = false;
 };
 
