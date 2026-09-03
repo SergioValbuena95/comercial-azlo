@@ -18,18 +18,21 @@ export type Database = {
                 Row: {
                     created_at: string
                     deleted_at: string | null
+                    email: string | null
                     id: number
                     name: string
                 }
                 Insert: {
                     created_at: string
                     deleted_at?: string | null
+                    email?: string | null
                     id?: number
                     name: string
                 }
                 Update: {
                     created_at?: string
                     deleted_at?: string | null
+                    email?: string | null
                     id?: number
                     name?: string
                 }
@@ -161,6 +164,7 @@ export type Database = {
                     request_date: string | null
                     shipment_date: string | null
                     state: number | null
+                    state_started_at: string | null
                     "sub_state": number | null
                     total_value: number
                 }
@@ -182,6 +186,7 @@ export type Database = {
                     request_date?: string | null
                     shipment_date?: string | null
                     state?: number | null
+                    state_started_at?: string | null
                     "sub_state"?: number | null
                     total_value: number
                 }
@@ -203,6 +208,7 @@ export type Database = {
                     request_date?: string | null
                     shipment_date?: string | null
                     state?: number | null
+                    state_started_at?: string | null
                     "sub_state"?: number | null
                     total_value?: number
                 }

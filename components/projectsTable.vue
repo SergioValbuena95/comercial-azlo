@@ -53,6 +53,7 @@
                 </button>
             </div>
         </div>
+        <!-- filters tabs -->
         <div class="flex flex-wrap items-center gap-2 mb-4">
             <button
                 v-for="tab in projectTabsMain"
@@ -77,25 +78,6 @@
                 Limpiar x
             </button>
         </div>
-        <!-- sub filter states -->
-        <!-- <div class="flex flex-wrap items-center gap-2 mb-4">
-            <button
-                v-for="tab in projectTabs"
-                :key="tab.key"
-                type="button"
-                class="h-9 px-3 rounded-lg border text-xs font-medium transition-colors"
-                :class="
-                    activeProjectTab === tab.key
-                        ? 'border-acid-400/40 bg-acid-400/10 text-acid-400'
-                        : 'border-white/10 text-obsidian-400 hover:text-white hover:border-white/20'
-                "
-                @click="activeProjectTab = tab.key"
-            >
-                {{ tab.label }}
-                <span class="ml-1 text-obsidian-500">{{ tab.count }}</span>
-            </button>
-        </div> -->
-
         <div class="glass-card overflow-hidden">
             <div class="block lg:hidden divide-y divide-white/[0.06]">
                 <div
@@ -130,6 +112,11 @@
                             :aria-label="`Actualizar estado de ${project.proyecto}`"
                             @update:estado="handleSubStateChange(project, $event)"
                         />
+                    </div>
+                    <div v-if="Number(project.estado) === 3" class="mb-2">
+                        <p class="text-white text-sm font-body font-medium max-w-xs">
+                            Dias en cartera: {{ daysInCheckbook(project.state_started_at) ?? "-" }}
+                        </p>
                     </div>
                     <div class="flex flex-wrap gap-x-4 gap-y-1 text-xs text-obsidian-400 font-mono">
                         <span>{{ responsibleName(project.encargado) }}</span>
@@ -276,6 +263,9 @@
                                     :title="project.proyecto"
                                 >
                                     {{ project.proyecto }}
+                                </p>
+                                <p v-if="Number(project.estado) === 3" class="text-white text-sm font-body font-medium max-w-xs">
+                                    Dias en cartera: {{ daysInCheckbook(project.state_started_at) ?? "-" }}
                                 </p>
                             </td>
                             <td class="px-4 py-3.5 text-obsidian-400 text-sm font-mono">
@@ -484,15 +474,6 @@ const columns = [
     { key: "notas", label: "Notas" },
 ];
 
-// const subStateOptions = [
-//     "Vendido",
-//     "Fabricación",
-//     "Despacho",
-//     "Instalacion",
-//     "Instalado",
-//     "Facturado",
-// ];
-
 const userProjects = computed(() => {
     let list = [...props.projects];
     if (!isAdminUser(currentUserProfile.value)) {
@@ -555,6 +536,15 @@ const responsibleName = (uid?: string) => {
 };
 
 const projectStateId = (project: Project) => Number(project.estado);
+
+const daysInCheckbook = (stateStartedAt?: string) => {
+    if (!stateStartedAt) return null;
+
+    const startedAt = new Date(stateStartedAt).getTime();
+    if (Number.isNaN(startedAt)) return null;
+
+    return Math.max(0, Math.floor((Date.now() - startedAt) / 86_400_000));
+};
 
 const isInProgressProject = (project: Project) =>
     projectStateId(project) === PROJECT_STATES.IN_PROGRESS.id;

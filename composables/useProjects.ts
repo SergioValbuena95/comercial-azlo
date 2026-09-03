@@ -16,6 +16,7 @@ export interface Project {
     porcentajesPago?: string;
     pagosRealizados?: number[];
     notas?: string;
+    state_started_at?: string;
     // created_by?: unknown;
     // createdByRef?: unknown;
     // createdByUid?: string;
@@ -133,6 +134,7 @@ const mapDbToProject = (row: any, subStates: Map<number, string>): Project => {
         porcentajesPago: row.agreed_percentages || "",
         pagosRealizados: pagosArr,
         notas: row.notes || "",
+        state_started_at: row.state_started_at || "",
         // createdByUid: row.reponsible_id ? String(row.reponsible_id) : "",
         // createdByEmail: row.created_by_email || "",
         // createdByName: row.created_by_name || row.reponsible || "",
@@ -169,6 +171,7 @@ const mapProjectToDb = (project: any, nameToIdMap: Map<string, number>) => {
     if (project.porcentajesPago !== undefined) result.agreed_percentages = project.porcentajesPago;
     if (project.pagosRealizados !== undefined) result.payments_completed = project.pagosRealizados;
     if (project.notas !== undefined) result.notes = project.notas;
+    if (project.state_started_at !== undefined) result.state_started_at = project.state_started_at || null;
 
     return result;
 };
@@ -332,6 +335,7 @@ export function useProjects() {
 
             if (currentStateId === 2 && payload.sub_state === 6) {
                 payload.state = 3;
+                payload.state_started_at = new Date().toISOString();
             }
 
             if (currentStateId === 3 && payload.sub_state === 12) {
@@ -353,6 +357,17 @@ export function useProjects() {
                 .eq("id", Number(id));
 
             if (err) throw err;
+
+            // if (currentStateId === 2 && payload.state === PROJECT_STATES.CHECK_BOOK.id) {
+            //     try {
+            //         await $fetch('/api/email/send', {
+            //             method: 'POST',
+            //             body: { projectId: Number(id) },
+            //         });
+            //     } catch (emailErr) {
+            //         console.error("Failed to send state change email:", emailErr);
+            //     }
+            // }
         } catch (e) {
             console.error("Error updating project:", e);
         }
