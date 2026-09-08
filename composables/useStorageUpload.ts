@@ -64,14 +64,71 @@ export function useStorageUpload() {
         };
     };
 
-    const createSignedUrl = async (path: string, expiresIn = 3600) => {
+    const cleanPath = (p: string) => {
+        if (!p) return "";
+        let cleaned = p.trim();
+        if (cleaned.startsWith(`${BUCKET}/`)) {
+            cleaned = cleaned.slice(BUCKET.length + 1);
+        }
+        return cleaned.replace(/^\/+/, "");
+    };
+
+    const createSignedUrl = async (path: string, expiresIn = 3600): Promise<string> => {
+        const sanitized = cleanPath(path);
+        if (!sanitized) throw new Error("Ruta de archivo no válida.");
+
+        try {
+            const res = await $fetch<{ signedUrl: string }>("/api/storage/sign", {
+                method: "POST",
+                body: { path: sanitized, expiresIn },
+            });
+            if (res?.signedUrl) {
+                return res.signedUrl;
+            }
+        } catch (serverErr: any) {
+            console.warn("Server sign endpoint failed, falling back to client storage:", serverErr?.message || serverErr);
+        }
+
         const { data, error } = await client.storage
             .from(BUCKET)
-            .createSignedUrl(path, expiresIn);
+            .createSignedUrl(sanitized, expiresIn);
 
         if (error) throw error;
         return data.signedUrl;
     };
 
-    return { upload, createSignedUrl };
+    const download = async (path: string): Promise<Blob> => {
+        const sanitized = cleanPath(path);
+        if (!sanitized) throw new Error("Ruta de archivo no válida.");
+
+        try {
+            const signedUrl = await createSignedUrl(sanitized);
+            if (signedUrl) {
+                const response = await fetch(signedUrl);
+                if (response.ok) {
+                    return await response.blob();
+                }
+            }
+        } catch (signedErr: any) {
+            console.warn("Could not download via signed URL, falling back to direct storage download:", signedErr?.message || signedErr);
+        }
+
+        const { data, error } = await client.storage
+            .from(BUCKET)
+            .download(sanitized);
+
+        if (error) throw error;
+        return data; // returns Blob
+    };
+
+    const getPublicUrl = (path: string) => {
+        const sanitized = cleanPath(path);
+        const { data } = client.storage
+            .from(BUCKET)
+            .getPublicUrl(sanitized);
+
+        return data.publicUrl;
+    };
+
+    return { upload, createSignedUrl, download, getPublicUrl, cleanPath };
 }

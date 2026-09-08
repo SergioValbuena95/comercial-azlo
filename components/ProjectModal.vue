@@ -229,6 +229,71 @@
                                     placeholder="Notas comerciales, acuerdos o próximos pasos"
                                 />
                             </div>
+                            <!-- Files -->
+                            <div class="col-span-2 space-y-3">
+                                <!-- Existing Files when editing -->
+                                <div v-if="project && project.id" class="rounded-lg border border-white/10 bg-white/[0.02] p-3 space-y-2">
+                                    <p class="text-xs font-mono uppercase tracking-wider text-obsidian-400">
+                                        Archivos adjuntos actuales
+                                    </p>
+                                    <div v-if="filesLoading" class="text-xs text-obsidian-400 font-mono py-1 flex items-center gap-2">
+                                        <span class="animate-spin text-xs">🌀</span> Cargando archivos...
+                                    </div>
+                                    <div v-else-if="existingFiles.length === 0" class="text-xs text-obsidian-500 font-mono py-1">
+                                        Sin archivos adjuntos previamente.
+                                    </div>
+                                    <ul v-else class="space-y-1.5 max-h-40 overflow-y-auto pr-1">
+                                        <li
+                                            v-for="file in existingFiles"
+                                            :key="file.id"
+                                            class="flex items-center justify-between px-3 py-2 text-xs font-mono bg-obsidian-800/60 border border-obsidian-700/60 rounded-md"
+                                        >
+                                            <div class="flex items-center truncate pr-2">
+                                                <span class="mr-2 shrink-0">
+                                                    <span v-if="file.name?.toLowerCase().endsWith('.pdf')" class="text-red-400">📕</span>
+                                                    <span v-else-if="file.mime_type?.startsWith('image/')" class="text-cyan-400">🖼️</span>
+                                                    <span v-else class="text-obsidian-400">📄</span>
+                                                </span>
+                                                <span class="text-obsidian-200 truncate">{{ file.name }}</span>
+                                                <span v-if="file.size" class="text-obsidian-500 ml-2 shrink-0">
+                                                    ({{ formatBytes(file.size) }})
+                                                </span>
+                                            </div>
+
+                                            <div class="flex items-center gap-1.5 shrink-0 ml-2">
+                                                <button
+                                                    type="button"
+                                                    class="text-emerald-400 hover:text-emerald-300 transition-colors text-xs font-medium px-2 py-0.5 rounded bg-emerald-500/10 hover:bg-emerald-500/20"
+                                                    @click="previewExistingFile(file)"
+                                                >
+                                                    Ver
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    :disabled="deletingFileId === file.id"
+                                                    class="text-obsidian-400 hover:text-red-400 transition-colors text-xs px-1.5 py-0.5 rounded hover:bg-white/5 disabled:opacity-50"
+                                                    title="Eliminar archivo"
+                                                    @click="handleDeleteExistingFile(file.id)"
+                                                >
+                                                    {{ deletingFileId === file.id ? "..." : "✕" }}
+                                                </button>
+                                            </div>
+                                        </li>
+                                    </ul>
+                                </div>
+
+                                <div>
+                                    <FileUploader
+                                        ref="fileUploaderRef"
+                                        :label="project ? 'Agregar nuevos archivos' : 'Archivos'"
+                                        :multiple="true"
+                                        @files-selected="handleFilesSelected"
+                                    />
+                                    <p v-if="uploadError" class="text-xs text-red-400 mt-1">
+                                        {{ uploadError }}
+                                    </p>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -242,19 +307,27 @@
                         </button>
                         <button
                             @click="handleSubmit"
-                            :disabled="!isValid"
-                            class="btn-primary disabled:opacity-40 disabled:cursor-not-allowed"
+                            :disabled="!isValid || isUploading"
+                            class="btn-primary disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
                         >
-                            {{ project ? "Guardar cambios" : "Crear proyecto" }}
+                            <span v-if="isUploading" class="animate-spin text-xs">🌀</span>
+                            {{ isUploading ? "Subiendo..." : (project ? "Guardar cambios" : "Crear proyecto") }}
                         </button>
                     </div>
                 </div>
             </div>
         </Transition>
+
+        <!-- In-CRM File Preview Modal -->
+        <PreviewModal
+            v-model="showPreview"
+            :file="previewingFile"
+        />
     </Teleport>
 </template>
 
 <script setup lang="ts">
+import FileUploader from '~/components/FileUploader.vue'
 import {
     PROJECT_STATES,
     type Project,
@@ -283,6 +356,7 @@ const {
     projectStateType: projectStates,
     loadMainStates
 } = useProjectStatesTypes();
+const { upload } = useStorageUpload();
 
 const paises = ["Colombia"];
 
@@ -363,6 +437,86 @@ const canAssignAnyUser = computed(() =>
     isAdminUser(currentUserProfile.value),
 );
 
+// Track selected files from FileUploader
+const fileUploaderRef = ref<any>(null);
+const selectedFiles = ref<File[]>([]);
+const isUploading = ref(false);
+const uploadError = ref<string | null>(null);
+
+// Existing Files Management
+const {
+    projectFiles: existingFiles,
+    loading: filesLoading,
+    fetchFilesByProject,
+    deleteProjectFile,
+} = useProjectFiles();
+
+const deletingFileId = ref<number | null>(null);
+const showPreview = ref(false);
+const previewingFile = ref<any>(null);
+
+const loadExistingFiles = async () => {
+    if (!props.project?.id) {
+        existingFiles.value = [];
+        return;
+    }
+    const numericId = Number(props.project.id);
+    if (numericId) {
+        await fetchFilesByProject(numericId);
+    }
+};
+
+const previewExistingFile = (file: any) => {
+    previewingFile.value = file;
+    showPreview.value = true;
+};
+
+const handleDeleteExistingFile = async (fileId: number) => {
+    if (!confirm("¿Deseas eliminar este archivo adjunto del proyecto?")) return;
+    deletingFileId.value = fileId;
+    try {
+        await deleteProjectFile(fileId);
+    } catch (e) {
+        console.error("Error al eliminar archivo:", e);
+    } finally {
+        deletingFileId.value = null;
+    }
+};
+
+const formatBytes = (bytes?: number | null) => {
+    if (!bytes) return "0 B";
+    const k = 1024;
+    const sizes = ["B", "KB", "MB", "GB"];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return `${parseFloat((bytes / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`;
+};
+
+const handleFilesSelected = (files: File[]) => {
+    selectedFiles.value = files;
+    uploadError.value = null;
+};
+
+const clearSelectedFiles = () => {
+    selectedFiles.value = [];
+    uploadError.value = null;
+    fileUploaderRef.value?.clear();
+};
+
+watch(
+    () => [props.modelValue, props.project?.id] as const,
+    ([isOpen, projectId]) => {
+        if (isOpen && projectId) {
+            loadExistingFiles();
+        } else if (!isOpen) {
+            clearSelectedFiles();
+            existingFiles.value = [];
+            showPreview.value = false;
+            previewingFile.value = null;
+        }
+    },
+    { immediate: true }
+);
+
 const canManageProjectState = computed(() => canAssignAnyUser.value);
 
 const userDisplayName = (appUser: Pick<AppUser, "displayName" | "email">) =>
@@ -423,23 +577,44 @@ const isValid = computed(
         form.sub_state,
 );
 
-const handleSubmit = () => {
-    if (!isValid.value) return;
-    const { id: _id, ...projectData } = form as typeof form & { id?: string };
+const handleSubmit = async () => {
+    if (!isValid.value || isUploading.value) return;
+    
+    isUploading.value = true;
+    uploadError.value = null;
 
-    emit("save", {
-        ...projectData,
-        sub_state: form.sub_state,
-        diasAcordados:
-            typeof form.diasAcordados === "number"
-                ? form.diasAcordados
-                : null,
-        valorTotal:
-            typeof form.valorTotal === "number" ? form.valorTotal : null,
-        porcentajesPago: form.porcentajesPago.trim(),
-        notas: form.notas.trim(),
-    });
-    emit("update:modelValue", false);
+    try {
+        const uploadedFileResults = [];
+        if (selectedFiles.value.length > 0) {
+            for (const file of selectedFiles.value) {
+                const uploaded = await upload(file);
+                uploadedFileResults.push(uploaded);
+            }
+        }
+
+        const { id: _id, ...projectData } = form as typeof form & { id?: string };
+
+        emit("save", {
+            ...projectData,
+            sub_state: form.sub_state,
+            diasAcordados:
+                typeof form.diasAcordados === "number"
+                    ? form.diasAcordados
+                    : null,
+            valorTotal:
+                typeof form.valorTotal === "number" ? form.valorTotal : null,
+            porcentajesPago: form.porcentajesPago.trim(),
+            notas: form.notas.trim(),
+            ...(uploadedFileResults.length > 0 ? { files: uploadedFileResults } : {}),
+        } as Omit<Project, "id">);
+
+        emit("update:modelValue", false);
+    } catch (err: any) {
+        console.error("Error al subir archivos:", err);
+        uploadError.value = err?.message || "Ocurrió un error al subir los archivos.";
+    } finally {
+        isUploading.value = false;
+    }
 };
 </script>
 

@@ -18,21 +18,18 @@ export type Database = {
                 Row: {
                     created_at: string
                     deleted_at: string | null
-                    email: string | null
                     id: number
                     name: string
                 }
                 Insert: {
                     created_at: string
                     deleted_at?: string | null
-                    email?: string | null
                     id?: number
                     name: string
                 }
                 Update: {
                     created_at?: string
                     deleted_at?: string | null
-                    email?: string | null
                     id?: number
                     name?: string
                 }
@@ -145,6 +142,54 @@ export type Database = {
                     },
                 ]
             }
+            project_files: {
+                Row: {
+                    created_at: string
+                    created_by: number | null
+                    id: number
+                    mime_type: string | null
+                    name: string
+                    project_id: number
+                    size: number | null
+                    storage_path: string
+                }
+                Insert: {
+                    created_at?: string
+                    created_by?: number | null
+                    id?: number
+                    mime_type?: string | null
+                    name: string
+                    project_id: number
+                    size?: number | null
+                    storage_path: string
+                }
+                Update: {
+                    created_at?: string
+                    created_by?: number | null
+                    id?: number
+                    mime_type?: string | null
+                    name?: string
+                    project_id?: number
+                    size?: number | null
+                    storage_path?: string
+                }
+                Relationships: [
+                    {
+                        foreignKeyName: "project_files_created_by_fkey"
+                        columns: ["created_by"]
+                        isOneToOne: false
+                        referencedRelation: "users"
+                        referencedColumns: ["id"]
+                    },
+                    {
+                        foreignKeyName: "project_files_project_id_fkey"
+                        columns: ["project_id"]
+                        isOneToOne: false
+                        referencedRelation: "projects"
+                        referencedColumns: ["id"]
+                    },
+                ]
+            }
             projects: {
                 Row: {
                     address: string | null
@@ -154,6 +199,7 @@ export type Database = {
                     country: string | null
                     created_at: string
                     deleted_at: string | null
+                    email: string | null
                     id: number
                     installation_date: string | null
                     name: string
@@ -165,7 +211,7 @@ export type Database = {
                     shipment_date: string | null
                     state: number | null
                     state_started_at: string | null
-                    "sub_state": number | null
+                    sub_state: number | null
                     total_value: number
                 }
                 Insert: {
@@ -176,6 +222,7 @@ export type Database = {
                     country?: string | null
                     created_at?: string
                     deleted_at?: string | null
+                    email?: string | null
                     id?: number
                     installation_date?: string | null
                     name: string
@@ -187,7 +234,7 @@ export type Database = {
                     shipment_date?: string | null
                     state?: number | null
                     state_started_at?: string | null
-                    "sub_state"?: number | null
+                    sub_state?: number | null
                     total_value: number
                 }
                 Update: {
@@ -198,6 +245,7 @@ export type Database = {
                     country?: string | null
                     created_at?: string
                     deleted_at?: string | null
+                    email?: string | null
                     id?: number
                     installation_date?: string | null
                     name?: string
@@ -209,7 +257,7 @@ export type Database = {
                     shipment_date?: string | null
                     state?: number | null
                     state_started_at?: string | null
-                    "sub_state"?: number | null
+                    sub_state?: number | null
                     total_value?: number
                 }
                 Relationships: [
@@ -218,6 +266,20 @@ export type Database = {
                         columns: ["reponsible_id"]
                         isOneToOne: false
                         referencedRelation: "users"
+                        referencedColumns: ["id"]
+                    },
+                    {
+                        foreignKeyName: "projects_state_fkey"
+                        columns: ["state"]
+                        isOneToOne: false
+                        referencedRelation: "states"
+                        referencedColumns: ["id"]
+                    },
+                    {
+                        foreignKeyName: "projects_sub_state_fkey"
+                        columns: ["sub_state"]
+                        isOneToOne: false
+                        referencedRelation: "sub_state"
                         referencedColumns: ["id"]
                     },
                 ]
@@ -349,12 +411,12 @@ export type Tables<
     DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-    TableName extends DefaultSchemaTableNameOrOptions extends {
+    TableName extends (DefaultSchemaTableNameOrOptions extends {
         schema: keyof DatabaseWithoutInternals
     }
-    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+        ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+            DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+        : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
 }
@@ -378,11 +440,11 @@ export type TablesInsert<
     DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-    TableName extends DefaultSchemaTableNameOrOptions extends {
+    TableName extends (DefaultSchemaTableNameOrOptions extends {
         schema: keyof DatabaseWithoutInternals
     }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+        ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+        : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
 }
@@ -403,11 +465,11 @@ export type TablesUpdate<
     DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-    TableName extends DefaultSchemaTableNameOrOptions extends {
+    TableName extends (DefaultSchemaTableNameOrOptions extends {
         schema: keyof DatabaseWithoutInternals
     }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+        ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+        : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
 }
@@ -428,11 +490,11 @@ export type Enums<
     DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
-    EnumName extends DefaultSchemaEnumNameOrOptions extends {
+    EnumName extends (DefaultSchemaEnumNameOrOptions extends {
         schema: keyof DatabaseWithoutInternals
     }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+        ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+        : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
 }
@@ -445,11 +507,11 @@ export type CompositeTypes<
     PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-    CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+    CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
         schema: keyof DatabaseWithoutInternals
     }
-    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+        ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+        : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
 }

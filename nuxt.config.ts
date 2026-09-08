@@ -12,6 +12,10 @@ export default defineNuxtConfig({
             path: '~/components/buttons',
             pathPrefix: false,
         },
+        {
+            path: '~/components/modals',
+            pathPrefix: false,
+        },
         '~/components'
     ],
 

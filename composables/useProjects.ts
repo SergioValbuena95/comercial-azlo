@@ -23,6 +23,7 @@ export interface Project {
     // createdByEmail?: string;
     // createdByName?: string;
     createdAt?: string;
+    files?: import("~/composables/useStorageUpload").UploadedFile[];
 }
 
 export const PROJECT_STATES = {
@@ -311,11 +312,27 @@ export function useProjects() {
                 // payload.created_by_email = user.value.email || "";
                 // payload.created_by_name = profile ? profile.displayName : "";
 
-                const { error: err } = await client.from("projects").insert(payload);
+                const { data: insertedProject, error: err } = await client
+                    .from("projects")
+                    .insert(payload)
+                    .select()
+                    .single();
                 if (err) throw err;
+
+                if (insertedProject && project.files && project.files.length > 0) {
+                    const { saveProjectFiles } = useProjectFiles();
+                    await saveProjectFiles(
+                        insertedProject.id,
+                        project.files,
+                        profile ? Number(profile.id) : null
+                    );
+                }
+
+                return insertedProject;
             }
         } catch (e) {
             console.error("Error adding project:", e);
+            throw e;
         }
     };
 
@@ -358,16 +375,20 @@ export function useProjects() {
 
             if (err) throw err;
 
-            // if (currentStateId === 2 && payload.state === PROJECT_STATES.CHECK_BOOK.id) {
-            //     try {
-            //         await $fetch('/api/email/send', {
-            //             method: 'POST',
-            //             body: { projectId: Number(id) },
-            //         });
-            //     } catch (emailErr) {
-            //         console.error("Failed to send state change email:", emailErr);
-            //     }
-            // }
+            // Save any newly uploaded files when editing
+            if (data.files && data.files.length > 0) {
+                const { currentUserProfile, loadCurrentUserProfile } = useUsers();
+                if (!currentUserProfile.value) {
+                    await loadCurrentUserProfile();
+                }
+                const profile = currentUserProfile.value;
+                const { saveProjectFiles } = useProjectFiles();
+                await saveProjectFiles(
+                    Number(id),
+                    data.files,
+                    profile ? Number(profile.id) : null
+                );
+            }
         } catch (e) {
             console.error("Error updating project:", e);
         }

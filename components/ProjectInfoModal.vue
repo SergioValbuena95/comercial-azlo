@@ -95,22 +95,73 @@
                         </div>
 
                         <div>
-                            <p
-                                class="text-xs font-mono uppercase tracking-wider text-obsidian-500 mb-2"
-                            >
+                            <p class="text-xs font-mono uppercase tracking-wider text-obsidian-500 mb-2">
                                 Notas
                             </p>
-                            <p
-                                class="min-h-20 rounded-lg border border-white/10 bg-white/[0.03] p-4 text-sm leading-relaxed text-obsidian-200 whitespace-pre-wrap"
-                            >
+                            <p class="min-h-20 rounded-lg border border-white/10 bg-white/[0.03] p-4 text-sm leading-relaxed text-obsidian-200 whitespace-pre-wrap">
                                 {{ project.notas?.trim() || "Sin notas registradas." }}
                             </p>
                         </div>
+                        <div>
+                            <p class="text-xs font-mono uppercase tracking-wider text-obsidian-500 mb-2">
+                                Archivos
+                            </p>
+                            <div class="rounded-lg border border-white/10 bg-white/[0.03] p-4 text-sm leading-relaxed text-obsidian-200">
+                                <div v-if="filesLoading" class="text-xs text-obsidian-400 font-mono py-2 flex items-center gap-2">
+                                    <span class="animate-spin text-xs">🌀</span> Cargando archivos...
+                                </div>
+                                <div v-else-if="filesError" class="text-xs text-red-400 font-mono py-2">
+                                    {{ filesError }}
+                                </div>
+                                <div v-else-if="projectFiles.length === 0" class="text-xs text-obsidian-400 font-mono py-2">
+                                    Sin archivos adjuntos.
+                                </div>
+                                <ul v-else class="space-y-2">
+                                    <li
+                                        v-for="file in projectFiles"
+                                        :key="file.id"
+                                        class="flex items-center justify-between px-3 py-2 text-xs font-mono bg-obsidian-800/60 border border-obsidian-700/60 rounded-md hover:border-obsidian-500 transition-colors"
+                                    >
+                                        <div
+                                            class="flex items-center truncate pr-2 cursor-pointer group"
+                                            title="Ver archivo"
+                                            @click="handleViewFile(file)"
+                                        >
+                                            <span class="mr-2 shrink-0">
+                                                <span v-if="isPdfFile(file)" class="text-red-400">📕</span>
+                                                <span v-else-if="isImageFile(file)" class="text-cyan-400">🖼️</span>
+                                                <span v-else class="text-obsidian-400">📄</span>
+                                            </span>
+                                            <span class="text-obsidian-200 truncate group-hover:text-white transition-colors">{{ file.name }}</span>
+                                            <span v-if="file.size" class="text-obsidian-500 ml-2 shrink-0">
+                                                ({{ formatBytes(file.size) }})
+                                            </span>
+                                        </div>
+
+                                        <div class="flex items-center gap-2 shrink-0 ml-3">
+                                            <button
+                                                type="button"
+                                                class="text-emerald-400 hover:text-emerald-300 transition-colors font-medium text-xs px-2.5 py-1 rounded bg-emerald-500/10 hover:bg-emerald-500/20 flex items-center gap-1.5"
+                                                @click="handleViewFile(file)"
+                                            >
+                                                Ver
+                                            </button>
+                                            <button
+                                                type="button"
+                                                :disabled="downloadingFileId === file.id"
+                                                class="text-obsidian-300 hover:text-white transition-colors font-medium text-xs px-2 py-1 rounded bg-white/5 hover:bg-white/10 border border-white/10 disabled:opacity-50"
+                                                @click="handleDownloadFile(file)"
+                                            >
+                                                {{ downloadingFileId === file.id ? "Descargando..." : "Descargar" }}
+                                            </button>
+                                        </div>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
                     </div>
 
-                    <div
-                        class="flex justify-end p-6 border-t border-white/[0.07]"
-                    >
+                    <div class="flex justify-end p-6 border-t border-white/[0.07]">
                         <button
                             type="button"
                             class="btn-ghost"
@@ -122,11 +173,18 @@
                 </div>
             </div>
         </Transition>
+
+        <PreviewModal
+            v-model="showPreviewModal"
+            :file="previewFile"
+        />
     </Teleport>
 </template>
 
 <script setup lang="ts">
 import { projectSubState, type Project } from "~/composables/useProjects";
+import { useProjectFiles, type ProjectFile } from "~/composables/useProjectFiles";
+import { useStorageUpload } from "~/composables/useStorageUpload";
 
 const props = defineProps<{
     modelValue: boolean;
@@ -139,10 +197,91 @@ const emit = defineEmits<{
 }>();
 
 const { users, loadUsers } = useUsers();
+const { projectFiles, loading: filesLoading, error: filesError, fetchFilesByProject } = useProjectFiles();
+const { download } = useStorageUpload();
+
+const downloadingFileId = ref<number | null>(null);
+
+// Preview Modal State
+const showPreviewModal = ref(false);
+const previewFile = ref<ProjectFile | null>(null);
+
+const isImageFile = (file: ProjectFile) => {
+    if (file.mime_type?.toLowerCase().startsWith("image/")) return true;
+    const ext = file.name?.toLowerCase().split(".").pop();
+    return ["jpg", "jpeg", "png", "webp", "gif", "svg", "bmp"].includes(ext || "");
+};
+
+const isPdfFile = (file: ProjectFile) => {
+    if (file.mime_type?.toLowerCase() === "application/pdf") return true;
+    return file.name?.toLowerCase().endsWith(".pdf") ?? false;
+};
+
+const handleViewFile = (file: ProjectFile) => {
+    previewFile.value = file;
+    showPreviewModal.value = true;
+};
+
+const loadFiles = async () => {
+    if (!props.project?.id) return;
+    const numericId = Number(props.project.id);
+    if (numericId) {
+        await fetchFilesByProject(numericId);
+    }
+};
+
+watch(
+    () => [props.modelValue, props.project?.id] as const,
+    ([isOpen, projectId]) => {
+        if (isOpen && projectId) {
+            loadFiles();
+        } else if (!isOpen) {
+            showPreviewModal.value = false;
+            previewFile.value = null;
+        }
+    },
+    { immediate: true }
+);
 
 onMounted(() => {
     loadUsers();
+    if (props.modelValue && props.project?.id) {
+        loadFiles();
+    }
 });
+
+const handleDownloadFile = async (file: ProjectFile) => {
+    if (!file.storage_path) return;
+    downloadingFileId.value = file.id;
+
+    try {
+        const blob = await download(file.storage_path);
+        if (blob) {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = file.name;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            setTimeout(() => URL.revokeObjectURL(url), 10000);
+        }
+    } catch (err: any) {
+        console.error("Error downloading file:", err);
+        const msg = err?.data?.statusMessage || err?.message || "No se pudo descargar el archivo.";
+        alert(msg);
+    } finally {
+        downloadingFileId.value = null;
+    }
+};
+
+const formatBytes = (bytes?: number | null) => {
+    if (!bytes) return "0 B";
+    const k = 1024;
+    const sizes = ["B", "KB", "MB", "GB"];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return `${parseFloat((bytes / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`;
+};
 
 const responsibleName = (uid?: string) => {
     if (!uid) return "";
