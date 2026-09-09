@@ -156,6 +156,7 @@
                 @delete="confirmDelete"
                 @payment-toggle="togglePayment"
                 @sub_state-change="updateSubState"
+                @date-change="updateDate"
             />
             <!-- Activities table -->
             <ActivitiesTable
@@ -480,6 +481,11 @@ const togglePayment = async (project: Project, pagosRealizados: number[]) => {
 const updateSubState = async (project: Project, subState: string) => {
     if (!project.id) return;
     await updateProject(project.id, { sub_state: subState });
+};
+
+const updateDate = async (project: Project, date: string) => {
+    if (!project.id) return;
+    await updateProject(project.id, { state_started_at: date });
 };
 
 const handleDelete = async () => {

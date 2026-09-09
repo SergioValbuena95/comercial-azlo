@@ -274,7 +274,32 @@
                                 {{ responsibleName(project.encargado) }}
                             </td>
                             <td class="px-4 py-3.5 text-obsidian-500 text-xs font-mono">
-                                {{ formatDate(project.fechaCreacion) }}
+                                <div v-if="Number(project.estado) === 3" class="relative inline-flex items-center" @click.stop>
+                                    <button
+                                        type="button"
+                                        class="hover:text-acid-400 hover:underline cursor-pointer flex items-center gap-1 transition-colors text-obsidian-300 font-medium"
+                                        :title="'Click para cambiar fecha de cartera'"
+                                        @click="triggerDatepicker(projectKey(project))"
+                                    >
+                                        <span>{{ formatDateTime(project.state_started_at) }}</span>
+                                        <svg class="w-3 h-3 text-obsidian-500 hover:text-acid-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                                            <line x1="16" y1="2" x2="16" y2="6"></line>
+                                            <line x1="8" y1="2" x2="8" y2="6"></line>
+                                            <line x1="3" y1="10" x2="21" y2="10"></line>
+                                        </svg>
+                                    </button>
+                                    <input
+                                        :ref="(el) => setDateInputRef(projectKey(project), el)"
+                                        type="date"
+                                        :value="project.state_started_at ? project.state_started_at.split('T')[0] : ''"
+                                        class="sr-only"
+                                        @change="handleDateChange(project, ($event.target as HTMLInputElement).value)"
+                                    />
+                                </div>
+                                <span v-else>
+                                    {{ formatDate(project.fechaCreacion) }}
+                                </span>
                             </td>
                             <td class="px-4 py-3.5 text-obsidian-500 text-xs font-mono">
                                 {{ formatDate(project.fechaInstalacion) }}
@@ -441,6 +466,7 @@ const emit = defineEmits<{
     delete: [project: Project];
     "payment-toggle": [project: Project, paidPayments: number[]];
     "sub_state-change": [project: Project, subState: string];
+    "date-change": [project: Project, date: string];
 }>();
 
 const {
@@ -461,18 +487,21 @@ const sortDir = ref<"asc" | "desc">("desc");
 const currentPage = ref(1);
 const perPage = 10;
 
-const columns = [
+const columns = computed(() => [
     { key: "proyecto", label: "Proyecto" },
     { key: "ciudad", label: "Ciudad" },
     { key: "encargado", label: "Encargado" },
-    { key: "fechaCreacion", label: "Solicitud" },
+    {
+        key: activeProjectTabMain.value === "checkbook" ? "state_started_at" : "fechaCreacion",
+        label: activeProjectTabMain.value === "checkbook" ? "Facturado" : "Solicitud",
+    },
     { key: "fechaInstalacion", label: "Instalacion" },
     { key: "fechaDespacho", label: "Despacho" },
     { key: "sub_state", label: "Estado" },
     { key: "valorTotal", label: "Valor total" },
     { key: "porcentajesPago", label: "Pagos" },
     { key: "notas", label: "Notas" },
-];
+]);
 
 const userProjects = computed(() => {
     let list = [...props.projects];
@@ -797,6 +826,37 @@ const formatDate = (value?: string) => {
     const [year, month, day] = value.split("-");
     if (!year || !month || !day) return value;
     return `${day}/${month}/${year}`;
+};
+
+const formatDateTime = (value?: string) => {
+    if (!value) return "N/A";
+    const datePart = value.split("T")[0];
+    return formatDate(datePart);
+};
+
+const dateInputRefs = ref<Record<string, HTMLInputElement | null>>({});
+
+const setDateInputRef = (key: string, el: any) => {
+    if (el) {
+        dateInputRefs.value[key] = el as HTMLInputElement;
+    }
+};
+
+const triggerDatepicker = (key: string) => {
+    const input = dateInputRefs.value[key];
+    if (input) {
+        if (typeof input.showPicker === "function") {
+            input.showPicker();
+        } else {
+            input.click();
+        }
+    }
+};
+
+const handleDateChange = (project: Project, newDate: string) => {
+    if (!newDate) return;
+    const isoDate = new Date(`${newDate}T12:00:00`).toISOString();
+    emit("date-change", project, isoDate);
 };
 </script>
 
