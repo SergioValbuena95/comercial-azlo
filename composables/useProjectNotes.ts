@@ -20,7 +20,7 @@ export const useProjectNotes = () => {
                 .select("*")
                 .eq("project_id", projectId)
                 .is("deleted_at", null)
-                .order("created_at", { ascending: true });
+                .order("created_at", { ascending: false });
 
             if (supabaseError) throw supabaseError;
 
