@@ -483,9 +483,22 @@ const updateSubState = async (project: Project, subState: string) => {
     await updateProject(project.id, { sub_state: subState });
 };
 
-const updateDate = async (project: Project, date: string) => {
+const updateDate = async (
+    project: Project,
+    date: string,
+    field: "state_started_at" | "fechaInstalacion" | "fechaDespacho" = "state_started_at",
+) => {
     if (!project.id) return;
-    await updateProject(project.id, { state_started_at: date });
+    if (field === "fechaInstalacion") {
+        project.fechaInstalacion = date;
+        await updateProject(project.id, { fechaInstalacion: date });
+    } else if (field === "fechaDespacho") {
+        project.fechaDespacho = date;
+        await updateProject(project.id, { fechaDespacho: date });
+    } else {
+        project.state_started_at = date;
+        await updateProject(project.id, { state_started_at: date });
+    }
 };
 
 const handleDelete = async () => {

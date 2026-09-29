@@ -120,7 +120,7 @@
                     </div>
                     <div class="flex flex-wrap gap-x-4 gap-y-1 text-xs text-obsidian-400 font-mono">
                         <span>{{ responsibleName(project.encargado) }}</span>
-                        <span v-if="project.fechaDespacho">
+                        <span v-if="project.fechaInstalacion">
                             Instalacion:
                             {{ formatDate(project.fechaInstalacion) }}
                         </span>
@@ -279,7 +279,7 @@
                                         type="button"
                                         class="hover:text-acid-400 hover:underline cursor-pointer flex items-center gap-1 transition-colors text-obsidian-300 font-medium"
                                         :title="'Click para cambiar fecha de cartera'"
-                                        @click="triggerDatepicker(projectKey(project))"
+                                        @click="triggerDatepicker(`${projectKey(project)}-state_started_at`)"
                                     >
                                         <span>{{ formatDateTime(project.state_started_at) }}</span>
                                         <svg class="w-3 h-3 text-obsidian-500 hover:text-acid-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -290,11 +290,11 @@
                                         </svg>
                                     </button>
                                     <input
-                                        :ref="(el) => setDateInputRef(projectKey(project), el)"
+                                        :ref="(el) => setDateInputRef(`${projectKey(project)}-state_started_at`, el)"
                                         type="date"
                                         :value="project.state_started_at ? project.state_started_at.split('T')[0] : ''"
                                         class="sr-only"
-                                        @change="handleDateChange(project, ($event.target as HTMLInputElement).value)"
+                                        @change="handleDateChange(project, ($event.target as HTMLInputElement).value, 'state_started_at')"
                                     />
                                 </div>
                                 <span v-else>
@@ -302,10 +302,54 @@
                                 </span>
                             </td>
                             <td class="px-4 py-3.5 text-obsidian-500 text-xs font-mono">
-                                {{ formatDate(project.fechaInstalacion) }}
+                                <div class="relative inline-flex items-center" @click.stop>
+                                    <button
+                                        type="button"
+                                        class="hover:text-acid-400 hover:underline cursor-pointer flex items-center gap-1 transition-colors text-obsidian-300 font-medium"
+                                        :title="'Click para cambiar fecha de instalación'"
+                                        @click="triggerDatepicker(`${projectKey(project)}-fechaInstalacion`)"
+                                    >
+                                        <span>{{ formatDateTime(project.fechaInstalacion) }}</span>
+                                        <svg class="w-3 h-3 text-obsidian-500 hover:text-acid-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                                            <line x1="16" y1="2" x2="16" y2="6"></line>
+                                            <line x1="8" y1="2" x2="8" y2="6"></line>
+                                            <line x1="3" y1="10" x2="21" y2="10"></line>
+                                        </svg>
+                                    </button>
+                                    <input
+                                        :ref="(el) => setDateInputRef(`${projectKey(project)}-fechaInstalacion`, el)"
+                                        type="date"
+                                        :value="project.fechaInstalacion ? project.fechaInstalacion.split('T')[0] : ''"
+                                        class="sr-only"
+                                        @change="handleDateChange(project, ($event.target as HTMLInputElement).value, 'fechaInstalacion')"
+                                    />
+                                </div>
                             </td>
                             <td class="px-4 py-3.5 text-obsidian-500 text-xs font-mono">
-                                {{ formatDate(project.fechaDespacho) }}
+                                <div class="relative inline-flex items-center" @click.stop>
+                                    <button
+                                        type="button"
+                                        class="hover:text-acid-400 hover:underline cursor-pointer flex items-center gap-1 transition-colors text-obsidian-300 font-medium"
+                                        :title="'Click para cambiar fecha de despacho'"
+                                        @click="triggerDatepicker(`${projectKey(project)}-fechaDespacho`)"
+                                    >
+                                        <span>{{ formatDateTime(project.fechaDespacho) }}</span>
+                                        <svg class="w-3 h-3 text-obsidian-500 hover:text-acid-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                                            <line x1="16" y1="2" x2="16" y2="6"></line>
+                                            <line x1="8" y1="2" x2="8" y2="6"></line>
+                                            <line x1="3" y1="10" x2="21" y2="10"></line>
+                                        </svg>
+                                    </button>
+                                    <input
+                                        :ref="(el) => setDateInputRef(`${projectKey(project)}-fechaDespacho`, el)"
+                                        type="date"
+                                        :value="project.fechaDespacho ? project.fechaDespacho.split('T')[0] : ''"
+                                        class="sr-only"
+                                        @change="handleDateChange(project, ($event.target as HTMLInputElement).value, 'fechaDespacho')"
+                                    />
+                                </div>
                             </td>
                             <!-- sub-state -->
                             <td class="px-4 py-3.5">
@@ -466,7 +510,11 @@ const emit = defineEmits<{
     delete: [project: Project];
     "payment-toggle": [project: Project, paidPayments: number[]];
     "sub_state-change": [project: Project, subState: string];
-    "date-change": [project: Project, date: string];
+    "date-change": [
+        project: Project,
+        date: string,
+        field?: "state_started_at" | "fechaInstalacion" | "fechaDespacho",
+    ];
 }>();
 
 const {
@@ -630,12 +678,13 @@ const hasFilters = computed(
 const filteredProjects = computed(() => {
     let list = [...userProjects.value];
 
-    const filter = {
+    const filterMap: Partial<Record<typeof activeProjectTabMain.value, (project: Project) => boolean>> = {
         inProgress: isInProgressProject,
         sold: isSoldProject,
         checkbook: isCheckBookProject,
         done: isDoneProject,
-    }[activeProjectTabMain.value];
+    };
+    const filter = filterMap[activeProjectTabMain.value];
 
     list = filter ? list.filter(filter) : list;
 
@@ -853,10 +902,20 @@ const triggerDatepicker = (key: string) => {
     }
 };
 
-const handleDateChange = (project: Project, newDate: string) => {
+type DateField = "state_started_at" | "fechaInstalacion" | "fechaDespacho";
+
+const handleDateChange = (
+    project: Project,
+    newDate: string,
+    field: DateField = "state_started_at",
+) => {
     if (!newDate) return;
-    const isoDate = new Date(`${newDate}T12:00:00`).toISOString();
-    emit("date-change", project, isoDate);
+    if (field === "state_started_at") {
+        const isoDate = new Date(`${newDate}T12:00:00`).toISOString();
+        emit("date-change", project, isoDate, field);
+    } else {
+        emit("date-change", project, newDate, field);
+    }
 };
 </script>
 

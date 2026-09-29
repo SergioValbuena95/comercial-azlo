@@ -288,9 +288,37 @@ body {
 }
 
 :root.theme-light .bg-obsidian-800,
+:root.theme-light .bg-obsidian-800\/60,
 :root.theme-light .bg-obsidian-700\/60 {
     background-color: #e7eff2 !important;
 }
+
+:root.theme-light .bg-obsidian-900\/50 {
+    background-color: rgba(244, 247, 248, 0.7) !important;
+}
+
+:root.theme-light .border-obsidian-700,
+:root.theme-light .border-obsidian-700\/60 {
+    border-color: rgba(0, 85, 113, 0.16) !important;
+}
+
+:root.theme-light .uploader-dropzone {
+    background-color: #ffffff !important;
+    border-color: rgba(0, 85, 113, 0.25) !important;
+}
+
+:root.theme-light .uploader-dropzone:hover {
+    background-color: rgba(0, 85, 113, 0.02) !important;
+    border-color: rgba(0, 85, 113, 0.5) !important;
+}
+
+:root.theme-light .uploader-file-item {
+    background-color: #eef4f6 !important;
+    border-color: rgba(0, 85, 113, 0.16) !important;
+    color: #10232c !important;
+}
+
+
 
 :root.theme-light .calendar-card .vc-container {
     --vc-header-arrow-hover-bg: rgba(0, 85, 113, 0.08);
