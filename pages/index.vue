@@ -146,30 +146,60 @@
                     </div>
                 </div>
             </section>
-            <ProjectsTable
-                :projects="projects"
-                :loading="loading"
-                :search-query="searchQuery"
-                @info="openInfo"
-                @notes="openNotes"
-                @edit="openEdit"
-                @delete="confirmDelete"
-                @payment-toggle="togglePayment"
-                @sub_state-change="updateSubState"
-                @date-change="updateDate"
+
+            <!-- View Mode Switcher -->
+            <ViewToggle
+                v-model="currentView"
+                :options="viewOptions"
+                @change="handleViewChange"
             />
-            <!-- Activities table -->
-            <ActivitiesTable
-                :projects="projects"
-                :loading="loading"
-                :search-query="searchQuery"
-                @info="openInfo"
-                @notes="openNotes"
-                @edit="openEdit"
-                @delete="confirmDelete"
-                @payment-toggle="togglePayment"
-                @sub_state-change="updateSubState"
-            />
+
+            <!-- View: Table -->
+            <div v-show="currentView === 'table'" class="space-y-8">
+                <ProjectsTable
+                    :projects="projects"
+                    :loading="loading"
+                    :search-query="searchQuery"
+                    @info="openInfo"
+                    @notes="openNotes"
+                    @edit="openEdit"
+                    @delete="confirmDelete"
+                    @payment-toggle="togglePayment"
+                    @sub_state-change="updateSubState"
+                    @date-change="updateDate"
+                />
+                <!-- Activities table -->
+                <ActivitiesTable
+                    :projects="projects"
+                    :loading="loading"
+                    :search-query="searchQuery"
+                    @info="openInfo"
+                    @notes="openNotes"
+                    @edit="openEdit"
+                    @delete="confirmDelete"
+                    @payment-toggle="togglePayment"
+                    @sub_state-change="updateSubState"
+                />
+            </div>
+
+            <!-- View: Kanban -->
+            <ClientOnly>
+                <div v-if="currentView === 'kanban'">
+                    <KanbanBoard
+                        :projects="projects"
+                        :loading="loading"
+                        :search-query="searchQuery"
+                        @info="openInfo"
+                        @notes="openNotes"
+                        @edit="openEdit"
+                        @delete="confirmDelete"
+                        @payment-toggle="togglePayment"
+                        @sub_state-change="updateSubState"
+                        @state-change="handleStateChange"
+                        @date-change="updateDate"
+                    />
+                </div>
+            </ClientOnly>
             <!-- Charts Section -->
             <section class="animate-on-scroll" style="animation-delay: 0.1s">
                 <div class="flex items-center justify-between mb-4">
@@ -203,7 +233,7 @@
                     CRM Comercial · {{ new Date().getFullYear() }}
                 </p>
                 <p class="text-obsidian-600 text-xs font-mono">
-                    Nuxt 3 · Firebase · Tailwind CSS
+                    Nuxt 3 · Supabase · Tailwind CSS
                 </p>
             </div>
         </footer>
@@ -273,9 +303,11 @@
 </template>
 
 <script setup lang="ts">
-import { useProjects, type Project } from "~/composables/useProjects";
+import { useProjects, type Project, type ProjectStateId } from "~/composables/useProjects";
 import { useProjectNotes } from "~/composables/useProjectNotes";
 import { ref } from 'vue';
+import { Table, SquareKanban } from '@lucide/vue';
+
 
 const {
     projects,
@@ -309,11 +341,34 @@ const notesSaving = ref(false);
 const searchQuery = ref("");
 const { initTheme } = useTheme();
 
+// View Mode (Table vs Kanban)
+const currentView = ref<"table" | "kanban">("table");
+
+
+const viewOptions = [
+    { value: "table", label: "Tabla", icon: Table },
+    { value: "kanban", label: "Kanban", icon: SquareKanban },
+];
+
+const handleViewChange = (view: "table" | "kanban") => {
+    currentView.value = view;
+    if (import.meta.client) {
+        localStorage.setItem("crm_view_mode", view);
+    }
+}
+
 // Load on mount
 onMounted(() => {
     initTheme();
     loadProjects();
     initScrollAnimations();
+
+    if (import.meta.client) {
+        const savedView = localStorage.getItem("crm_view_mode");
+        if (savedView === "table" || savedView === "kanban") {
+            currentView.value = savedView;
+        }
+    }
 });
 
 // Computed
@@ -481,6 +536,18 @@ const togglePayment = async (project: Project, pagosRealizados: number[]) => {
 const updateSubState = async (project: Project, subState: string) => {
     if (!project.id) return;
     await updateProject(project.id, { sub_state: subState });
+};
+
+const handleStateChange = async (
+    project: Project,
+    newStateId: number,
+) => {
+    if (!project.id) return;
+    const payload: Partial<Project> = { estado: newStateId as ProjectStateId };
+    if (newStateId === 3) {
+        payload.state_started_at = new Date().toISOString();
+    }
+    await updateProject(project.id, payload);
 };
 
 const updateDate = async (

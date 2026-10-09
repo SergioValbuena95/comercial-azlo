@@ -11,6 +11,8 @@
         "supabase:gen-types": "npx supabase gen types typescript --project-id hsxdrgeryxojuzcpcnzi > types/database.types.ts"
     },
     "dependencies": {
+        "@formkit/drag-and-drop": "^0.6.1",
+        "@lucide/vue": "^1.54.0",
         "@popperjs/core": "^2.11.8",
         "@supabase/supabase-js": "^2.110.2",
         "@vueuse/core": "^10.9.0",

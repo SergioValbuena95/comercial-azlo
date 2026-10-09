@@ -342,6 +342,9 @@ export function useProjects() {
             const payload = mapProjectToDb(dataWithState, subStateNameToIdMap);
 
             const currentProject = projects.value.find(p => p.id === String(id));
+            if (currentProject) {
+                Object.assign(currentProject, dataWithState);
+            }
             const currentStateId = payload.state !== undefined
                 ? payload.state
                 : (currentProject ? Number(currentProject.estado) : undefined);
