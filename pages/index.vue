@@ -49,57 +49,14 @@
         <main class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
             <!-- Hero Section -->
             <section class="animate-on-scroll">
-                <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
-                    <div>
-                        <div class="inline-flex items-center gap-2 text-xs font-mono text-acid-400 bg-acid-400/10 border border-acid-400/20 rounded-full px-3 py-1 mb-3">
-                            <span class="w-1.5 h-1.5 bg-acid-400 rounded-full animate-pulse"></span>
-                            Dashboard activo
-                        </div>
-                        <h1 class="font-display font-extrabold text-3xl sm:text-4xl text-white leading-tight">
-                            Seguimiento<br />
-                            <span class="text-obsidian-500">Comercial</span>
-                        </h1>
-                    </div>
-                    <div class="text-right">
-                        <p class="text-obsidian-500 text-xs font-mono uppercase tracking-wider">
-                            Última actualización
-                        </p>
-                        <p class="text-white font-mono text-sm">
-                            {{ currentDate }}
-                        </p>
-                    </div>
-                </div>
+                <HeroInfoTop />
                 <!-- KPI Grid -->
-                <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-                    <StatCard
-                        label="Total Proyectos"
-                        :value="stats.total"
-                        icon="📋"
-                        accent-color="#005571"
-                        :sub="`${totalCities} ciudades`"
-                    />
-                    <StatCard
-                        label="Proyectos Activos"
-                        :value="stats.active"
-                        icon="⚡"
-                        accent-color="#74b9ff"
-                        :sub="`${percent(stats.active, stats.total)}% del total`"
-                    />
-                    <StatCard
-                        label="Instalados"
-                        :value="stats.completed"
-                        icon="✅"
-                        accent-color="#00b894"
-                        :sub="`${percent(stats.completed, stats.total)}% instalados`"
-                    />
-                    <StatCard
-                        label="Cerrados"
-                        :value="stats.closed"
-                        icon="🤝"
-                        accent-color="#a29bfe"
-                        :sub="`${percent(stats.closed, stats.total)}% facturados`"
-                    />
-                </div>
+                <KpiGrid
+                    :stats="stats"
+                    :total="stats.total"
+                    :totalCities="totalCities"
+                    :loading="loading"
+                />
                 <!-- KPI Grid -->
                 <div class="grid grid-cols-2 lg:grid-cols-3 gap-4">
                     <StatCard
@@ -113,17 +70,9 @@
                         :progress="yearlyGoalProgress"
                         progress-label="Cumplimiento"
                     />
-                    <!-- <StatCard
-                        label="Total Vendido Mes Actual"
-                        :value="stats.totalSoldCurrentMonth"
-                        icon="💸"
-                        accent-color="#74b9ff"
-                        :value-formatter="formatCurrency"
-                        :sub="currentMonthLabel"
-                    /> -->
                     <StatCard
                         class="col-span-2 lg:col-span-1"
-                        label="Venta mensual"
+                        :label="`Venta mes actual (${currentMonthLabel})`"
                         :value="stats.totalSoldCurrentMonth"
                         icon="🎯"
                         accent-color="#00b894"
@@ -372,19 +321,10 @@ onMounted(() => {
 });
 
 // Computed
-const currentDate = computed(() =>
-    new Date().toLocaleDateString("es-CO", {
-        weekday: "long",
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-    }),
-);
 const currentYear = computed(() => new Date().getFullYear());
 const currentMonthLabel = computed(() =>
     new Date().toLocaleDateString("es-CO", {
         month: "long",
-        year: "numeric",
     }),
 );
 const MONTHLY_GOAL = 186833333;
@@ -553,7 +493,7 @@ const handleStateChange = async (
 const updateDate = async (
     project: Project,
     date: string,
-    field: "state_started_at" | "fechaInstalacion" | "fechaDespacho" = "state_started_at",
+    field: "state_started_at" | "fechaInstalacion" | "fechaDespacho" | "fechaCreacion" = "state_started_at",
 ) => {
     if (!project.id) return;
     if (field === "fechaInstalacion") {
@@ -562,6 +502,9 @@ const updateDate = async (
     } else if (field === "fechaDespacho") {
         project.fechaDespacho = date;
         await updateProject(project.id, { fechaDespacho: date });
+    } else if (field === "fechaCreacion") {
+        project.fechaCreacion = date;
+        await updateProject(project.id, { fechaCreacion: date });
     } else {
         project.state_started_at = date;
         await updateProject(project.id, { state_started_at: date });

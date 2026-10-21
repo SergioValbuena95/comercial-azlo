@@ -485,10 +485,10 @@ export function useProjects() {
             (p) => projectSubState(p).trim().toLowerCase() !== "facturado",
         ).length;
         const completed = projects.value.filter(
-            (p) => projectSubState(p).trim().toLowerCase() === "instalado",
+            (p) => [3, 4].includes(Number(p.estado)),
         ).length;
         const closed = projects.value.filter(
-            (p) => projectSubState(p).trim().toLowerCase() === "facturado",
+            (p) => Number(p.estado) === PROJECT_STATES.IN_PROGRESS.id,
         ).length;
 
         return {

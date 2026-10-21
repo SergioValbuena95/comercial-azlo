@@ -254,6 +254,7 @@
                             role="button"
                             tabindex="0"
                         >
+                            <!-- project name -->
                             <td
                                 class="px-4 py-3.5 cursor-pointer"
                                 @click="$emit('info', project)"
@@ -268,9 +269,12 @@
                                     Dias en cartera: {{ daysInCheckbook(project.state_started_at) ?? "-" }}
                                 </p>
                             </td>
+                            <!-- project city -->
                             <td class="px-4 py-3.5 text-obsidian-400 text-sm font-mono">
                                 {{ project.ciudad }}
-                            </td> <td class="px-4 py-3.5 text-obsidian-400 text-sm font-body">
+                            </td>
+                            <!-- project responsible -->
+                            <td class="px-4 py-3.5 text-obsidian-400 text-sm font-body">
                                 {{ responsibleName(project.encargado) }}
                             </td>
                             <td class="px-4 py-3.5 text-obsidian-500 text-xs font-mono">
@@ -297,9 +301,29 @@
                                         @change="handleDateChange(project, ($event.target as HTMLInputElement).value, 'state_started_at')"
                                     />
                                 </div>
-                                <span v-else>
-                                    {{ formatDate(project.fechaCreacion) }}
-                                </span>
+                                <div v-else class="relative inline-flex items-center" @click.stop>
+                                    <button
+                                        type="button"
+                                        class="hover:text-acid-400 hover:underline cursor-pointer flex items-center gap-1 transition-colors text-obsidian-300 font-medium"
+                                        :title="'Click para cambiar fecha de solicitud'"
+                                        @click="triggerDatepicker(`${projectKey(project)}-fechaCreacion`)"
+                                    >
+                                        <span>{{ formatDate(project.fechaCreacion) }}</span>
+                                        <svg class="w-3 h-3 text-obsidian-500 hover:text-acid-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                                            <line x1="16" y1="2" x2="16" y2="6"></line>
+                                            <line x1="8" y1="2" x2="8" y2="6"></line>
+                                            <line x1="3" y1="10" x2="21" y2="10"></line>
+                                        </svg>
+                                    </button>
+                                    <input
+                                        :ref="(el) => setDateInputRef(`${projectKey(project)}-fechaCreacion`, el)"
+                                        type="date"
+                                        :value="project.fechaCreacion ? project.fechaCreacion.split('T')[0] : ''"
+                                        class="sr-only"
+                                        @change="handleDateChange(project, ($event.target as HTMLInputElement).value, 'fechaCreacion')"
+                                    />
+                                </div>
                             </td>
                             <td class="px-4 py-3.5 text-obsidian-500 text-xs font-mono">
                                 <div class="relative inline-flex items-center" @click.stop>
@@ -513,7 +537,7 @@ const emit = defineEmits<{
     "date-change": [
         project: Project,
         date: string,
-        field?: "state_started_at" | "fechaInstalacion" | "fechaDespacho",
+        field?: "state_started_at" | "fechaInstalacion" | "fechaDespacho" | "fechaCreacion",
     ];
 }>();
 
@@ -902,7 +926,7 @@ const triggerDatepicker = (key: string) => {
     }
 };
 
-type DateField = "state_started_at" | "fechaInstalacion" | "fechaDespacho";
+type DateField = "state_started_at" | "fechaInstalacion" | "fechaDespacho" | "fechaCreacion";
 
 const handleDateChange = (
     project: Project,
