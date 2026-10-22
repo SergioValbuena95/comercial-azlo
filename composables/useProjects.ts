@@ -482,7 +482,7 @@ export function useProjects() {
         }, 0);
 
         const active = projects.value.filter(
-            (p) => projectSubState(p).trim().toLowerCase() !== "facturado",
+            (p) => Number(p.estado) === PROJECT_STATES.SOLD.id,
         ).length;
         const completed = projects.value.filter(
             (p) => [3, 4].includes(Number(p.estado)),
