@@ -184,6 +184,7 @@ export function useProjects() {
     const useFirebase = ref(false);
     const client = useSupabaseClient();
     let projectsChannel: any = null;
+    const myProjects = ref<Project[]>([]);
 
     const loadSubStates = async () => {
         try {
@@ -238,6 +239,15 @@ export function useProjects() {
                             sensitivity: "base",
                         }),
                     );
+
+                myProjects.value = projects.value.filter((p) => {
+                    return (
+                        String(p.encargado) === String(currentUserProfile?.value?.id) ||
+                        p.encargado === currentUserProfile?.value?.displayName ||
+                        p.encargado === currentUserProfile?.value?.email
+                    );
+                });
+
 
                 // Set up real-time subscription
                 if (!projectsChannel) {
@@ -415,7 +425,7 @@ export function useProjects() {
         const now = new Date();
         const currentYear = String(now.getFullYear());
         const currentMonth = `${currentYear}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-        const total = projects.value.length;
+        const total = myProjects.value.length;
         const byStatus = projects.value.reduce(
             (acc, p) => {
                 const subState = projectSubState(p) || "Sin estado";
@@ -481,13 +491,16 @@ export function useProjects() {
             return sum + Number(p.valorTotal || 0);
         }, 0);
 
-        const active = projects.value.filter(
+        // const active = projects.value.filter(
+        //     (p) => Number(p.estado) === PROJECT_STATES.SOLD.id,
+        // ).length;
+        const active = myProjects.value.filter(
             (p) => Number(p.estado) === PROJECT_STATES.SOLD.id,
         ).length;
-        const completed = projects.value.filter(
+        const completed = myProjects.value.filter(
             (p) => [3, 4].includes(Number(p.estado)),
         ).length;
-        const closed = projects.value.filter(
+        const closed = myProjects.value.filter(
             (p) => Number(p.estado) === PROJECT_STATES.IN_PROGRESS.id,
         ).length;
 

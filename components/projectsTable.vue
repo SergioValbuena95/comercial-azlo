@@ -225,9 +225,9 @@
                                     </span>
                                 </div>
                             </th>
-                            <th class="px-4 py-3 text-right text-xs font-mono text-obsidian-500 uppercase tracking-wider">
+                            <!-- <th class="px-4 py-3 text-right text-xs font-mono text-obsidian-500 uppercase tracking-wider">
                                 Acciones
-                            </th>
+                            </th> -->
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-white/[0.04]">
@@ -274,9 +274,10 @@
                                 {{ project.ciudad }}
                             </td>
                             <!-- project responsible -->
-                            <td class="px-4 py-3.5 text-obsidian-400 text-sm font-body">
+                            <td v-if="!isComercialUser(currentUserProfile)" class="px-4 py-3.5 text-obsidian-400 text-sm font-body">
                                 {{ responsibleName(project.encargado) }}
                             </td>
+                            <!-- fecha inicio -->
                             <td class="px-4 py-3.5 text-obsidian-500 text-xs font-mono">
                                 <div v-if="Number(project.estado) === 3" class="relative inline-flex items-center" @click.stop>
                                     <button
@@ -325,6 +326,7 @@
                                     />
                                 </div>
                             </td>
+                            <!-- fecha instalacion -->
                             <td class="px-4 py-3.5 text-obsidian-500 text-xs font-mono">
                                 <div class="relative inline-flex items-center" @click.stop>
                                     <button
@@ -350,6 +352,7 @@
                                     />
                                 </div>
                             </td>
+                            <!-- fecha despacho -->
                             <td class="px-4 py-3.5 text-obsidian-500 text-xs font-mono">
                                 <div class="relative inline-flex items-center" @click.stop>
                                     <button
@@ -385,6 +388,7 @@
                                     @update:estado="handleSubStateChange(project, $event)"
                                 />
                             </td>
+                            <!-- total venta -->
                             <td class="px-4 py-3.5 text-obsidian-300 text-sm font-mono whitespace-nowrap">
                                 {{ formatCurrency(project.valorTotal) }}
                             </td>
@@ -456,11 +460,29 @@
                                 </button>
                             </td>
                             <!-- actions -->
-                            <td class="px-4 py-3.5">
+                            <td class="px-4 py-3.5 hidden">
                                 <div class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                     <EditButton @click="$emit('edit', project)" />
                                     <DeleteButton @click="$emit('delete', project)" />
                                 </div>
+                            </td>
+                            <!-- estado produccion -->
+                            <td class="px-4 py-3.5">
+                                <StatusBadge
+                                    estado="Remisión"
+                                    :editable="!isComercialUser(currentUserProfile)"
+                                    :options="subStateProductionOptions"
+                                    @update:estado="handleSubStateChange(project, $event)"
+                                />
+                            </td>
+                            <!-- estado instalacion -->
+                            <td class="px-4 py-3.5">
+                                <StatusBadge
+                                    estado="Pintura"
+                                    :editable="!isComercialUser(currentUserProfile)"
+                                    :options="subStateInstallationOptions"
+                                    @update:estado="handleSubStateChange(project, $event)"
+                                />
                             </td>
                         </tr>
                     </tbody>
@@ -547,7 +569,7 @@ const {
     loadUsers,
     loadCurrentUserProfile,
 } = useUsers();
-const { isAdminUser } = useAccess();
+const { isAdminUser, isComercialUser } = useAccess();
 
 const filterStatus = ref("");
 const filterCountry = ref("");
@@ -562,7 +584,10 @@ const perPage = 10;
 const columns = computed(() => [
     { key: "proyecto", label: "Proyecto" },
     { key: "ciudad", label: "Ciudad" },
-    { key: "encargado", label: "Encargado" },
+    ...(!isComercialUser(currentUserProfile.value)
+        ? [{ key: "encargado", label: "Encargado" }]
+        : []),
+    // { key: "encargado", label: "Encargado" },
     {
         key: activeProjectTabMain.value === "checkbook" ? "state_started_at" : "fechaCreacion",
         label: activeProjectTabMain.value === "checkbook" ? "Facturado" : "Solicitud",
@@ -573,7 +598,84 @@ const columns = computed(() => [
     { key: "valorTotal", label: "Valor total" },
     { key: "porcentajesPago", label: "Pagos" },
     { key: "notas", label: "Notas" },
+    { key: "production_state", label: "Estado producción" },
+    { key: "instalation_state", label: "Estado instalación" },
 ]);
+
+const subStateProductionOptions = ref(
+    [
+        {
+            id: 1,
+            name: "Llamada Inicial",
+        },
+        {
+            id: 2,
+            name: "Envio proliminares para instalación",
+        },
+        {
+            id: 3,
+            name: "Fecha Programada",
+        },
+        {
+            id: 4,
+            name: "Llamada cliente confirmación entrega",
+        },
+        {
+            id: 5,
+            name: "Confirmación de pago para despacho",
+        },
+        {
+            id: 6,
+            name: "Remisión",
+        },
+        {
+            id: 7,
+            name: "Acta de entrega",
+        },
+        {
+            id: 8,
+            name: "Envio de documentos finales",
+        },
+        {
+            id: 9,
+            name: "Fotos proyecto terminado",
+        },
+    ]
+)
+
+const subStateInstallationOptions = ref(
+    [
+        {
+            id: 1,
+            name: "Orden de producción",
+        },
+        {
+            id: 2,
+            name: "Compra de Materiales",
+        },
+        {
+            id: 3,
+            name: "Metalmecanica",
+        },
+        {
+            id: 4,
+            name: "Pintura",
+        },
+        {
+            id: 5,
+            name: "Corte cnc",
+        },
+        {
+            id: 6,
+            name: "Ensamble",
+        },
+        {
+            id: 7,
+            name: "Empaque",
+        },
+    ]
+)
+
 
 const userProjects = computed(() => {
     let list = [...props.projects];
