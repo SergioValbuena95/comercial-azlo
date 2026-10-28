@@ -465,7 +465,7 @@
                                 </div>
                             </td>
                             <!-- estado produccion -->
-                            <td class="px-4 py-3.5">
+                            <td v-if="project.estado !== 3" class="px-4 py-3.5">
                                 <StatusBadge
                                     estado="Remisión"
                                     :editable="!isComercialUser(currentUserProfile)"
@@ -474,7 +474,7 @@
                                 />
                             </td>
                             <!-- estado instalacion -->
-                            <td class="px-4 py-3.5">
+                            <td v-if="project.estado !== 3" class="px-4 py-3.5">
                                 <StatusBadge
                                     estado="Pintura"
                                     :editable="!isComercialUser(currentUserProfile)"
@@ -600,8 +600,12 @@ const columns = computed(() => [
     { key: "porcentajesPago", label: "Pagos" },
     { key: "notas", label: "Notas" },
     { key: "archivos", label: "Archivos" },
-    { key: "production_state", label: "Estado producción" },
-    { key: "instalation_state", label: "Estado instalación" },
+    ...(activeProjectTabMain.value !== "checkbook"
+        ? [
+            { key: "production_state", label: "Estado producción" },
+            { key: "instalation_state", label: "Estado instalación" },
+        ]
+        : []),
 ]);
 
 const subStateProductionOptions = ref(

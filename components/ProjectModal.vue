@@ -237,7 +237,9 @@
                                         Archivos adjuntos actuales
                                     </p>
                                     <div v-if="filesLoading" class="text-xs text-obsidian-400 font-mono py-1 flex items-center gap-2">
-                                        <span class="animate-spin text-xs">🌀</span> Cargando archivos...
+                                        <span class="animate-spin text-xs">
+                                            <Loader  />
+                                        </span> Cargando archivos...
                                     </div>
                                     <div v-else-if="existingFiles.length === 0" class="text-xs text-obsidian-500 font-mono py-1">
                                         Sin archivos adjuntos previamente.
@@ -310,7 +312,9 @@
                             :disabled="!isValid || isUploading"
                             class="btn-primary disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
                         >
-                            <span v-if="isUploading" class="animate-spin text-xs">🌀</span>
+                            <span v-if="isUploading" class="animate-spin text-xs">
+                                <Loader  />
+                            </span>
                             {{ isUploading ? "Subiendo..." : (project ? "Guardar cambios" : "Crear proyecto") }}
                         </button>
                     </div>
@@ -333,6 +337,7 @@ import {
     type Project,
 } from "~/composables/useProjects";
 import type { AppUser } from "~/composables/useUsers";
+import { Loader } from '@lucide/vue';
 
 const props = defineProps<{
     modelValue: boolean;

@@ -108,7 +108,10 @@
                             </p>
                             <div class="rounded-lg border border-white/10 bg-white/[0.03] p-4 text-sm leading-relaxed text-obsidian-200">
                                 <div v-if="filesLoading" class="text-xs text-obsidian-400 font-mono py-2 flex items-center gap-2">
-                                    <span class="animate-spin text-xs">🌀</span> Cargando archivos...
+                                    <span class="animate-spin text-xs">
+                                        <Loader  />
+                                    </span>
+                                    Cargando archivos...
                                 </div>
                                 <div v-else-if="filesError" class="text-xs text-red-400 font-mono py-2">
                                     {{ filesError }}
@@ -185,6 +188,7 @@
 import { projectSubState, type Project } from "~/composables/useProjects";
 import { useProjectFiles, type ProjectFile } from "~/composables/useProjectFiles";
 import { useStorageUpload } from "~/composables/useStorageUpload";
+import { Loader } from '@lucide/vue';
 
 const props = defineProps<{
     modelValue: boolean;
