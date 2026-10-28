@@ -174,19 +174,7 @@
                             @click.stop="$emit('notes', project)"
                             class="btn-ghost text-xs h-7 px-3 flex items-center gap-1.5"
                         >
-                            <svg
-                                aria-hidden="true"
-                                class="w-3.5 h-3.5"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                stroke-width="2"
-                            >
-                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                                <path d="M14 2v6h6" />
-                                <path d="M8 13h8" />
-                                <path d="M8 17h5" />
-                            </svg>
+                            <NotepadText class="w-3.5 h-3.5" />
                             <span>Notas</span>
                         </button>
                         <button
@@ -204,7 +192,7 @@
                     </div>
                 </div>
             </div>
-
+            <!-- table -->
             <div class="hidden lg:block overflow-x-auto">
                 <table class="w-full">
                     <thead>
@@ -425,7 +413,7 @@
                             <td class="px-4 py-3.5">
                                 <button
                                     type="button"
-                                    class="relative w-8 h-8 flex items-center justify-center rounded-lg border border-white/10 text-obsidian-400 hover:text-white hover:border-white/20 hover:bg-white/5 transition-colors"
+                                    class="relative mx-auto w-8 h-8 flex items-center justify-center rounded-lg border border-white/10 text-obsidian-400 hover:text-white hover:border-white/20 hover:bg-white/5 transition-colors"
                                     :class="{
                                         'text-acid-400 border-acid-400/30 bg-acid-400/10':
                                             project.notas,
@@ -438,21 +426,31 @@
                                     aria-label="Ver notas"
                                     @click.stop="$emit('notes', project)"
                                 >
-                                    <svg
-                                        aria-hidden="true"
-                                        class="w-4 h-4"
-                                        viewBox="0 0 24 24"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        stroke-width="2"
-                                    >
-                                        <path
-                                            d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"
-                                        />
-                                        <path d="M14 2v6h6" />
-                                        <path d="M8 13h8" />
-                                        <path d="M8 17h5" />
-                                    </svg>
+                                    <NotepadText class="w-4 h-4" />
+                                    <span
+                                        v-if="project.notas"
+                                        class="absolute right-1.5 top-1.5 w-1.5 h-1.5 rounded-full bg-acid-400"
+                                    ></span>
+                                </button>
+                            </td>
+                            <!-- files -->
+                            <td class="px-4 py-3.5">
+                                <button
+                                    type="button"
+                                    class="relative mx-auto w-8 h-8 flex items-center justify-center rounded-lg border border-white/10 text-obsidian-400 hover:text-white hover:border-white/20 hover:bg-white/5 transition-colors"
+                                    :class="{
+                                        'text-acid-400 border-acid-400/30 bg-acid-400/10':
+                                            project.notas,
+                                    }"
+                                    :title="
+                                        project.notas
+                                            ? 'Ver archivos'
+                                            : 'Sin archivos registradas'
+                                    "
+                                    aria-label="Ver archivos"
+                                    @click.stop="$emit('files', project)"
+                                >
+                                    <Files class="w-4 h-4" />
                                     <span
                                         v-if="project.notas"
                                         class="absolute right-1.5 top-1.5 w-1.5 h-1.5 rounded-full bg-acid-400"
@@ -537,6 +535,8 @@ import {
     projectSubState,
     type Project,
 } from "~/composables/useProjects";
+import { Files, NotepadText } from '@lucide/vue';
+
 
 const {
     projectStateType: projectStates,
@@ -552,6 +552,7 @@ const props = defineProps<{
 const emit = defineEmits<{
     info: [project: Project];
     notes: [project: Project];
+    files: [project: Project];
     edit: [project: Project];
     delete: [project: Project];
     "payment-toggle": [project: Project, paidPayments: number[]];
@@ -598,6 +599,7 @@ const columns = computed(() => [
     { key: "valorTotal", label: "Valor total" },
     { key: "porcentajesPago", label: "Pagos" },
     { key: "notas", label: "Notas" },
+    { key: "archivos", label: "Archivos" },
     { key: "production_state", label: "Estado producción" },
     { key: "instalation_state", label: "Estado instalación" },
 ]);

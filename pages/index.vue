@@ -111,6 +111,7 @@
                     :search-query="searchQuery"
                     @info="openInfo"
                     @notes="openNotes"
+                    @files="openFiles"
                     @edit="openEdit"
                     @delete="confirmDelete"
                     @payment-toggle="togglePayment"
@@ -155,7 +156,7 @@
                     <h2 class="section-title text-xl">Análisis Visual</h2>
                 </div>
                 <ClientOnly>
-                    <Charts
+                    <Charts2
                         v-if="!loading && projects.length"
                         :by-status="stats.byStatus"
                         :by-city="stats.byCity"
@@ -203,6 +204,12 @@
             @save="handleNotesSave"
             @update="handleNoteUpdate"
             @delete="handleNoteDelete"
+        />
+
+        <FilesModal
+            v-model="showFilesModal"
+            :project-title="filesProject?.proyecto"
+            :project-id="filesProject?.id"
         />
 
         <ProjectInfoModal
@@ -280,19 +287,19 @@ const {
 // State
 const showModal = ref(false);
 const showNotesModal = ref(false);
+const showFilesModal = ref(false);
 const showInfoModal = ref(false);
 const editingProject = ref<Project | null>(null);
 const deletingProject = ref<Project | null>(null);
 const notesProject = ref<Project | null>(null);
+const filesProject = ref<Project | null>(null);
 const infoProject = ref<Project | null>(null);
 const notesSaving = ref(false);
 
 const searchQuery = ref("");
 const { initTheme } = useTheme();
 
-// View Mode (Table vs Kanban)
 const currentView = ref<"table" | "kanban">("table");
-
 
 const viewOptions = [
     { value: "table", label: "Tabla", icon: Table },
@@ -422,6 +429,14 @@ const openNotes = async (project: Project) => {
     showNotesModal.value = true;
     if(project.id){
         await fetchNotes(Number(project.id));
+    }
+};
+
+const openFiles = async (project: Project) => {
+    filesProject.value = project;
+    showFilesModal.value = true;
+    if(project.id){
+        // await fetchFiles(Number(project.id));
     }
 };
 

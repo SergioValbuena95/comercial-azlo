@@ -122,7 +122,9 @@
                     <div class="relative flex-1 min-h-0 bg-obsidian-950/70 overflow-hidden flex items-center justify-center">
                         <!-- Loading State -->
                         <div v-if="isLoading" class="flex flex-col items-center justify-center gap-3 p-8 text-obsidian-300 font-mono text-xs">
-                            <span class="animate-spin text-2xl">🌀</span>
+                            <span class="animate-spin text-2xl">
+                                <Loader  />
+                            </span>
                             <span>Cargando previsualización...</span>
                         </div>
 
@@ -187,6 +189,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onBeforeUnmount } from "vue";
 import { useStorageUpload } from "~/composables/useStorageUpload";
+import { Loader } from '@lucide/vue';
 
 export interface PreviewFileItem {
     id?: number | string;
