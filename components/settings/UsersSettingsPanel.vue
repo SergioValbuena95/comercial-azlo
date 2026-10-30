@@ -15,7 +15,14 @@
                 </span>
             </div>
         </div>
-
+        <div class="relative h-[320px] w-full">
+            <Line
+                :data="chartData"
+                :options="chartOptions"
+                aria-label="Monthly revenue line chart"
+                role="img"
+            />
+        </div>
         <div class="hidden md:block overflow-x-auto">
             <table class="w-full">
                 <thead>
@@ -253,6 +260,7 @@
                         </button>
                     </div>
                 </div>
+                
             </div>
         </Transition>
     </Teleport>
@@ -260,6 +268,131 @@
 
 <script setup lang="ts">
 import type { AppUser } from "~/composables/useUsers";
+
+import {
+  Chart as ChartJS,
+  Title,
+  Tooltip,
+  Legend,
+  LineElement,
+  PointElement,
+  CategoryScale,
+  LinearScale,
+  Filler,
+} from 'chart.js'
+import { Line } from 'vue-chartjs'
+
+ChartJS.register(
+  Title,
+  Tooltip,
+  Legend,
+  LineElement,
+  PointElement,
+  CategoryScale,
+  LinearScale,
+  Filler,
+)
+
+// Chart data
+const chartData = {
+    labels: [
+        'January',
+        'February',
+        'March',
+        'April',
+        'May',
+        'June',
+        'July',
+    ],
+    datasets: [
+        {
+            label: 'Revenue',
+            data: [1200, 1900, 1500, 2500, 2200, 3100, 2800],
+
+            // Line styling
+            borderColor: '#6366F1',
+            borderWidth: 3,
+            tension: 0.3,
+            fill: true,
+            backgroundColor: 'rgba(99, 102, 241, 0.10)',
+
+            // Point styling
+            pointStyle: 'circle' as const,
+            pointRadius: 5,
+            pointHoverRadius: 9,
+            pointBackgroundColor: '#FFFFFF',
+            pointBorderColor: '#6366F1',
+            pointBorderWidth: 2,
+            pointHoverBackgroundColor: '#6366F1',
+            pointHoverBorderColor: '#FFFFFF',
+            pointHoverBorderWidth: 2,
+        },
+    ],
+}
+
+// Chart configuration
+const chartOptions = {
+  responsive: true,
+  maintainAspectRatio: false,
+
+  interaction: {
+    intersect: false,
+    mode: 'index' as const,
+  },
+
+  plugins: {
+    legend: {
+        display: true,
+        position: 'top' as const,
+        align: 'end' as const,
+        labels: {
+            usePointStyle: true,
+            padding: 20,
+        },
+    },
+
+    tooltip: {
+        enabled: true,
+        backgroundColor: '#18181B',
+        padding: 12,
+        displayColors: false,
+        callbacks: {
+            label: (context: { parsed: { y: number | null } }) =>
+            `Revenue: $${(context.parsed.y ?? 0).toLocaleString('en-US')}`,
+        },
+    },
+  },
+
+  scales: {
+    x: {
+      grid: {
+        display: false,
+      },
+      border: {
+        display: false,
+      },
+      ticks: {
+        color: '#71717A',
+      },
+    },
+
+    y: {
+      beginAtZero: true,
+      border: {
+        display: false,
+        dash: [4, 4],
+      },
+      grid: {
+        color: '#E4E4E7',
+      },
+      ticks: {
+        color: '#71717A',
+        callback: (value: string | number) =>
+          `$${Number(value).toLocaleString('en-US')}`,
+      },
+    },
+  },
+}
 
 const {
     users,

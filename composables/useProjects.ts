@@ -102,6 +102,28 @@ export const projectSubState = (project: Project) => {
     return typeof project.estado === "string" ? project.estado : "";
 }
 
+export const calculateProjectPayment = (project: Project) => {
+    const totalVal = Number(project.valorTotal || 0);
+    const parts = String(project.porcentajesPago || "")
+        .split(/[,-]/)
+        .map((part) => parseFloat(part.replace(/[^0-9.]/g, "")))
+        .filter((n) => !Number.isNaN(n) && n > 0);
+    const paidIndices = Array.isArray(project.pagosRealizados)
+        ? project.pagosRealizados.map(Number)
+        : [];
+    const paidPercent = Math.min(
+        100,
+        parts.reduce(
+            (sum, pct, idx) => (paidIndices.includes(idx) ? sum + pct : sum),
+            0,
+        ),
+    );
+    const collected = Math.round((totalVal * paidPercent) / 100);
+    const pending = Math.max(0, totalVal - collected);
+
+    return { collected, pending };
+};
+
 const subStateMap = new Map<number, string>();
 const subStateNameToIdMap = new Map<string, number>();
 
@@ -472,6 +494,29 @@ export function useProjects() {
             },
             {} as Record<string, number>,
         );
+        const valueByProject = projects.value.reduce(
+            (acc, p) => {
+                const name = p.proyecto || "Sin nombre";
+                acc[name] = (acc[name] || 0) + Number(p.valorTotal || 0);
+                return acc;
+            },
+            {} as Record<string, number>,
+        );
+
+        const paymentByProject = projects.value.reduce(
+            (acc, p) => {
+                const name = p.proyecto || "Sin nombre";
+                const { collected, pending } = calculateProjectPayment(p);
+                if (!acc[name]) {
+                    acc[name] = { collected: 0, pending: 0 };
+                }
+                acc[name].collected += collected;
+                acc[name].pending += pending;
+                return acc;
+            },
+            {} as Record<string, { collected: number; pending: number }>,
+        );
+
         const totalSoldCurrentYear = projects.value.reduce((sum, p) => {
             if (
                 Number(p.estado) === PROJECT_STATES.IN_PROGRESS.id ||
@@ -511,6 +556,8 @@ export function useProjects() {
             byResponsible,
             byMonth,
             valueByMonth,
+            valueByProject,
+            paymentByProject,
             totalSoldCurrentYear,
             totalSoldCurrentMonth,
             active,

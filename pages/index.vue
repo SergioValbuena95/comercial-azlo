@@ -156,12 +156,14 @@
                     <h2 class="section-title text-xl">Análisis Visual</h2>
                 </div>
                 <ClientOnly>
-                    <Charts2
+                    <Charts3
                         v-if="!loading && projects.length"
                         :by-status="stats.byStatus"
                         :by-city="stats.byCity"
                         :by-month="stats.byMonth"
                         :value-by-month="stats.valueByMonth"
+                        :value-by-project="stats.valueByProject"
+                        :payment-by-project="stats.paymentByProject"
                         :by-responsible="stats.byResponsible"
                         :total="stats.total"
                     />
