@@ -761,8 +761,8 @@ const handleDragend = (data: any) => {
     if (!draggedProject || !targetStateId || !oldStateId) return;
 
     if (targetStateId !== oldStateId) {
-        draggedProject.estado = targetStateId as ProjectStateId;
         emit("state-change", draggedProject, targetStateId, oldStateId);
+        draggedProject.estado = targetStateId as ProjectStateId;
     }
 };
 

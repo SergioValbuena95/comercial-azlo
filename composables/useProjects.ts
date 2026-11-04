@@ -10,7 +10,7 @@ export interface Project {
     fechaInstalacion: string;
     diasAcordados?: number | null;
     encargado: string;
-    sub_state?: string;
+    sub_state?: string | number | null;
     estado?: ProjectStateId | string;
     valorTotal?: number | null;
     porcentajesPago?: string;
@@ -92,8 +92,20 @@ const normalizeProject = (project: Project): Project => ({
         : [],
 });
 
-export const projectSubState = (project: Project) => {
-    if (project.sub_state) return project.sub_state;
+
+export const resolveSubStateLabel = (subState?: string | number | null): string => {
+    if (subState === null || subState === undefined || subState === "") return "";
+    const numericId = Number(subState);
+    if (!Number.isNaN(numericId) && subStateMap.has(numericId)) {
+        return subStateMap.get(numericId) || String(subState);
+    }
+    return String(subState);
+};
+
+export const projectSubState = (project: Project): string => {
+    if (project.sub_state !== undefined && project.sub_state !== null && project.sub_state !== "") {
+        return resolveSubStateLabel(project.sub_state);
+    }
 
     if (Number(project.estado) === PROJECT_STATES.DONE.id) {
         return projectStateLabel(project.estado);
@@ -374,12 +386,18 @@ export function useProjects() {
             const payload = mapProjectToDb(dataWithState, subStateNameToIdMap);
 
             const currentProject = projects.value.find(p => p.id === String(id));
+            const previousStateId = currentProject ? Number(currentProject.estado) : undefined;
+            const previousSubState = currentProject ? projectSubState(currentProject) : "";
+            const projectName = dataWithState.proyecto || currentProject?.proyecto || `Proyecto #${id}`;
             if (currentProject) {
                 Object.assign(currentProject, dataWithState);
+                if (dataWithState.sub_state !== undefined) {
+                    currentProject.sub_state = resolveSubStateLabel(dataWithState.sub_state);
+                }
             }
             const currentStateId = payload.state !== undefined
                 ? payload.state
-                : (currentProject ? Number(currentProject.estado) : undefined);
+                : previousStateId;
 
             if (currentStateId === 1 && payload.sub_state === 10) {
                 payload.state = 2;
@@ -409,6 +427,60 @@ export function useProjects() {
                 .eq("id", Number(id));
 
             if (err) throw err;
+
+            if (currentProject && payload.state !== undefined) {
+                currentProject.estado = payload.state;
+            }
+
+            const finalStateId = cleanPayload.state !== undefined
+                ? Number(cleanPayload.state)
+                : previousStateId;
+            const stateChanged =
+                finalStateId !== undefined &&
+                previousStateId !== undefined &&
+                finalStateId !== previousStateId;
+            const nextSubStateLabel =
+                dataWithState.sub_state !== undefined
+                    ? resolveSubStateLabel(cleanPayload.sub_state ?? dataWithState.sub_state).trim()
+                    : "";
+            const subStateChanged =
+                dataWithState.sub_state !== undefined &&
+                nextSubStateLabel.toLowerCase() !== String(previousSubState || "").trim().toLowerCase();
+
+            if (stateChanged || subStateChanged) {
+                const { currentUserProfile, loadCurrentUserProfile } = useUsers();
+                if (!currentUserProfile.value) {
+                    await loadCurrentUserProfile();
+                }
+                const profile = currentUserProfile.value;
+                const { createNotification } = useNotifications();
+
+                const oldStateLabel = stateChanged
+                    ? projectStateLabel(previousStateId)
+                    : (previousSubState || projectStateLabel(previousStateId));
+                const newStateLabel = stateChanged
+                    ? projectStateLabel(finalStateId)
+                    : nextSubStateLabel;
+
+                let message = "El estado del proyecto ha sido actualizado.";
+                if (stateChanged && subStateChanged && nextSubStateLabel) {
+                    message = `Sub-estado actualizado a "${nextSubStateLabel}" y movido a ${newStateLabel}.`;
+                } else if (stateChanged) {
+                    message = `El proyecto cambió de estado a ${newStateLabel}.`;
+                } else if (subStateChanged && nextSubStateLabel) {
+                    message = `El sub-estado del proyecto cambió a "${nextSubStateLabel}".`;
+                }
+
+                await createNotification({
+                    projectId: Number(id),
+                    title: projectName,
+                    message,
+                    oldState: oldStateLabel || null,
+                    newState: newStateLabel || null,
+                    userId: null,
+                    createdBy: profile?.id ? Number(profile.id) : null,
+                });
+            }
 
             // Save any newly uploaded files when editing
             if (data.files && data.files.length > 0) {

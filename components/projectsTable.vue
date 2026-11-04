@@ -54,7 +54,7 @@
             </div>
         </div>
         <!-- filters tabs -->
-        <div class="flex flex-wrap items-center gap-2 mb-4">
+        <div v-if="!isProductionUser(currentUserProfile)" class="flex flex-wrap items-center gap-2 mb-4">
             <button
                 v-for="tab in projectTabsMain"
                 :key="tab.key"
@@ -275,12 +275,7 @@
                                         @click="triggerDatepicker(`${projectKey(project)}-state_started_at`)"
                                     >
                                         <span>{{ formatDateTime(project.state_started_at) }}</span>
-                                        <svg class="w-3 h-3 text-obsidian-500 hover:text-acid-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-                                            <line x1="16" y1="2" x2="16" y2="6"></line>
-                                            <line x1="8" y1="2" x2="8" y2="6"></line>
-                                            <line x1="3" y1="10" x2="21" y2="10"></line>
-                                        </svg>
+                                        <CalendarDays class="w-3.5 h-3.5" />
                                     </button>
                                     <input
                                         :ref="(el) => setDateInputRef(`${projectKey(project)}-state_started_at`, el)"
@@ -298,12 +293,7 @@
                                         @click="triggerDatepicker(`${projectKey(project)}-fechaCreacion`)"
                                     >
                                         <span>{{ formatDate(project.fechaCreacion) }}</span>
-                                        <svg class="w-3 h-3 text-obsidian-500 hover:text-acid-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-                                            <line x1="16" y1="2" x2="16" y2="6"></line>
-                                            <line x1="8" y1="2" x2="8" y2="6"></line>
-                                            <line x1="3" y1="10" x2="21" y2="10"></line>
-                                        </svg>
+                                        <CalendarDays class="w-3.5 h-3.5" />
                                     </button>
                                     <input
                                         :ref="(el) => setDateInputRef(`${projectKey(project)}-fechaCreacion`, el)"
@@ -324,12 +314,7 @@
                                         @click="triggerDatepicker(`${projectKey(project)}-fechaInstalacion`)"
                                     >
                                         <span>{{ formatDateTime(project.fechaInstalacion) }}</span>
-                                        <svg class="w-3 h-3 text-obsidian-500 hover:text-acid-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-                                            <line x1="16" y1="2" x2="16" y2="6"></line>
-                                            <line x1="8" y1="2" x2="8" y2="6"></line>
-                                            <line x1="3" y1="10" x2="21" y2="10"></line>
-                                        </svg>
+                                        <CalendarDays class="w-3.5 h-3.5" />
                                     </button>
                                     <input
                                         :ref="(el) => setDateInputRef(`${projectKey(project)}-fechaInstalacion`, el)"
@@ -350,12 +335,7 @@
                                         @click="triggerDatepicker(`${projectKey(project)}-fechaDespacho`)"
                                     >
                                         <span>{{ formatDateTime(project.fechaDespacho) }}</span>
-                                        <svg class="w-3 h-3 text-obsidian-500 hover:text-acid-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-                                            <line x1="16" y1="2" x2="16" y2="6"></line>
-                                            <line x1="8" y1="2" x2="8" y2="6"></line>
-                                            <line x1="3" y1="10" x2="21" y2="10"></line>
-                                        </svg>
+                                        <CalendarDays class="w-3.5 h-3.5" />
                                     </button>
                                     <input
                                         :ref="(el) => setDateInputRef(`${projectKey(project)}-fechaDespacho`, el)"
@@ -367,7 +347,7 @@
                                 </div>
                             </td>
                             <!-- sub-state -->
-                            <td class="px-4 py-3.5">
+                            <td v-if="!isProductionUser(currentUserProfile)" class="px-4 py-3.5">
                                 <StatusBadge
                                     :estado="projectSubState(project)"
                                     :editable="project.estado !== 4"
@@ -381,7 +361,7 @@
                                 {{ formatCurrency(project.valorTotal) }}
                             </td>
                             <!-- payments  -->
-                            <td class="px-4 py-3.5 text-obsidian-400 text-xs font-mono">
+                            <td v-if="!isProductionUser(currentUserProfile)" class="px-4 py-3.5 text-obsidian-400 text-xs font-mono">
                                 <div class="flex flex-wrap gap-1.5 min-w-32" @click.stop>
                                     <button
                                         v-for="(payment, index) in paymentParts(project)"
@@ -465,7 +445,7 @@
                                 </div>
                             </td>
                             <!-- estado produccion -->
-                            <td v-if="project.estado !== 3" class="px-4 py-3.5">
+                            <td v-if="isProductionUser(currentUserProfile)" class="px-4 py-3.5">
                                 <StatusBadge
                                     estado="Remisión"
                                     :editable="!isComercialUser(currentUserProfile)"
@@ -474,7 +454,9 @@
                                 />
                             </td>
                             <!-- estado instalacion -->
-                            <td v-if="project.estado !== 3" class="px-4 py-3.5">
+                            <td v-if="isInstalationUser(currentUserProfile)" class="px-4 py-3.5">
+                                {{ project.estado }}
+                                {{ isProductionUser(currentUserProfile) }}
                                 <StatusBadge
                                     estado="Pintura"
                                     :editable="!isComercialUser(currentUserProfile)"
@@ -535,7 +517,7 @@ import {
     projectSubState,
     type Project,
 } from "~/composables/useProjects";
-import { Files, NotepadText } from '@lucide/vue';
+import { Files, NotepadText, CalendarDays } from '@lucide/vue';
 
 
 const {
@@ -570,7 +552,12 @@ const {
     loadUsers,
     loadCurrentUserProfile,
 } = useUsers();
-const { isAdminUser, isComercialUser } = useAccess();
+const {
+    isAdminUser,
+    isComercialUser,
+    isProductionUser,
+    isInstalationUser,
+} = useAccess();
 
 const filterStatus = ref("");
 const filterCountry = ref("");
@@ -588,27 +575,30 @@ const columns = computed(() => [
     ...(!isComercialUser(currentUserProfile.value)
         ? [{ key: "encargado", label: "Encargado" }]
         : []),
-    // { key: "encargado", label: "Encargado" },
     {
         key: activeProjectTabMain.value === "checkbook" ? "state_started_at" : "fechaCreacion",
         label: activeProjectTabMain.value === "checkbook" ? "Facturado" : "Solicitud",
     },
     { key: "fechaInstalacion", label: "Instalacion" },
     { key: "fechaDespacho", label: "Despacho" },
-    { key: "sub_state", label: "Estado" },
+    ...(!isProductionUser(currentUserProfile.value)
+        ? [{ key: "sub_state", label: "Estado" }]
+        : []),
     { key: "valorTotal", label: "Valor total" },
-    { key: "porcentajesPago", label: "Pagos" },
+    ...(!isProductionUser(currentUserProfile.value)
+        ? [{ key: "porcentajesPago", label: "Pagos" }]
+        : []),
     { key: "notas", label: "Notas" },
     { key: "archivos", label: "Archivos" },
-    ...(activeProjectTabMain.value !== "checkbook"
-        ? [
-            { key: "production_state", label: "Estado producción" },
-            { key: "instalation_state", label: "Estado instalación" },
-        ]
+    ...(isProductionUser(currentUserProfile.value)
+        ? [{ key: "production_state", label: "Estado producción" }]
+        : []),
+    ...(isInstalationUser(currentUserProfile.value)
+        ? [{ key: "instalation_state", label: "Estado instalación" }]
         : []),
 ]);
 
-const subStateProductionOptions = ref(
+const subStateInstallationOptions = ref(
     [
         {
             id: 1,
@@ -649,7 +639,7 @@ const subStateProductionOptions = ref(
     ]
 )
 
-const subStateInstallationOptions = ref(
+const subStateProductionOptions = ref(
     [
         {
             id: 1,

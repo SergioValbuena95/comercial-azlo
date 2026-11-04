@@ -32,14 +32,15 @@
                             />
                         </div>
                         <ThemeToggle />
-                       
                         <button
+                            v-if="!isProductionUser(currentUserProfile)"
                             @click="openCreate"
                             class="btn-primary flex items-center gap-2 h-9"
                         >
                             <span class="text-base leading-none">+</span>
                             <span class="hidden sm:inline">Nuevo Proyecto</span>
                         </button>
+                        <NotificationsMenu />
                         <AccountMenu />
                     </div>
                 </div>
@@ -52,13 +53,14 @@
                 <HeroInfoTop />
                 <!-- KPI Grid -->
                 <KpiGrid
+                    v-if="!isProductionUser(currentUserProfile)"
                     :stats="stats"
                     :total="stats.total"
                     :totalCities="totalCities"
                     :loading="loading"
                 />
                 <!-- KPI Grid -->
-                <div class="grid grid-cols-2 lg:grid-cols-3 gap-4">
+                <div v-if="!isProductionUser(currentUserProfile)" class="grid grid-cols-2 lg:grid-cols-3 gap-4">
                     <StatCard
                         class="col-span-2 lg:col-span-1"
                         label="Total Vendido"
@@ -98,6 +100,7 @@
 
             <!-- View Mode Switcher -->
             <ViewToggle
+                v-if="!isProductionUser(currentUserProfile)"
                 v-model="currentView"
                 :options="viewOptions"
                 @change="handleViewChange"
@@ -263,6 +266,15 @@
 <script setup lang="ts">
 import { useProjects, type Project, type ProjectStateId } from "~/composables/useProjects";
 import { useProjectNotes } from "~/composables/useProjectNotes";
+const { user, loading: authLoading, logout } = useAuth();
+const {
+    currentUserProfile,
+} = useUsers();
+const {
+    isAdminUser,
+    isComercialUser,
+    isProductionUser
+} = useAccess();
 import { ref } from 'vue';
 import { Table, SquareKanban } from '@lucide/vue';
 

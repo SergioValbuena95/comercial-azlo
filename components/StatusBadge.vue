@@ -57,7 +57,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref } from "vue";
 
 const props = withDefaults(
     defineProps<{
-        estado: string;
+        estado?: string | number | null;
         editable?: boolean;
         options?: any[];
         ariaLabel?: string;
@@ -70,7 +70,7 @@ const props = withDefaults(
 );
 
 const emit = defineEmits<{
-    "update:estado": [estado: string];
+    "update:estado": [estado: number | string];
 }>();
 
 const isOpen = ref(false);
@@ -157,9 +157,16 @@ const menuStyle = computed(() => ({
 }));
 
 const selectedOption = computed(() => {
+    if (props.estado === null || props.estado === undefined || props.estado === "") {
+        return props.options[0];
+    }
+    const numericEstado = Number(props.estado);
     return (
-        props.options.find((option) => option.name.toLowerCase() === props.estado.toLowerCase()) ||
-        props.options[0]
+        props.options.find(
+            (option) =>
+                (!Number.isNaN(numericEstado) && Number(option.id) === numericEstado) ||
+                String(option.name || "").toLowerCase() === String(props.estado).toLowerCase(),
+        ) || props.options[0]
     );
 });
 
@@ -176,7 +183,7 @@ const selectOptions = computed(() => {
 });
 
 const statusKey = computed(() => {
-    const value = props.estado.toLowerCase();
+    const value = String(selectedOption.value?.name || props.estado || "").toLowerCase();
 
     if (value.includes("vendido") && value.includes("instal"))
         return "vendidoInstalacion";
@@ -188,7 +195,7 @@ const statusKey = computed(() => {
     if (value.includes("terminado")) return "instalado";
     if (value.includes("facturado")) return "facturado";
 
-    return props.estado;
+    return String(selectedOption.value?.name || props.estado || "");
 });
 
 const badgeClass = computed(() => {

@@ -16,6 +16,7 @@ export default defineNuxtConfig({
             path: '~/components/modals',
             pathPrefix: false,
         },
+        { path: '~/components/header', pathPrefix: false },
         '~/components'
     ],
 

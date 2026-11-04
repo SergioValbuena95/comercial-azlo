@@ -77,6 +77,67 @@ export type Database = {
                     },
                 ]
             }
+            notifications: {
+                Row: {
+                    created_at: string
+                    created_by: number | null
+                    id: number
+                    is_read: boolean
+                    message: string
+                    new_state: string | null
+                    old_state: string | null
+                    project_id: number
+                    title: string
+                    user_id: number | null
+                }
+                Insert: {
+                    created_at?: string
+                    created_by?: number | null
+                    id?: number
+                    is_read?: boolean
+                    message: string
+                    new_state?: string | null
+                    old_state?: string | null
+                    project_id: number
+                    title: string
+                    user_id?: number | null
+                }
+                Update: {
+                    created_at?: string
+                    created_by?: number | null
+                    id?: number
+                    is_read?: boolean
+                    message?: string
+                    new_state?: string | null
+                    old_state?: string | null
+                    project_id?: number
+                    title?: string
+                    user_id?: number | null
+                }
+                Relationships: [
+                    {
+                        foreignKeyName: "notifications_created_by_fkey"
+                        columns: ["created_by"]
+                        isOneToOne: false
+                        referencedRelation: "users"
+                        referencedColumns: ["id"]
+                    },
+                    {
+                        foreignKeyName: "notifications_project_id_fkey"
+                        columns: ["project_id"]
+                        isOneToOne: false
+                        referencedRelation: "projects"
+                        referencedColumns: ["id"]
+                    },
+                    {
+                        foreignKeyName: "notifications_user_id_fkey"
+                        columns: ["user_id"]
+                        isOneToOne: false
+                        referencedRelation: "users"
+                        referencedColumns: ["id"]
+                    },
+                ]
+            }
             product_types: {
                 Row: {
                     created_at: string

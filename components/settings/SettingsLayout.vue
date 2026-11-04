@@ -22,6 +22,7 @@
                             Dashboard
                         </NuxtLink>
                         <ThemeToggle />
+                        <NotificationsMenu />
                         <AccountMenu />
                     </div>
                 </div>
