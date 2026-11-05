@@ -33,17 +33,7 @@
                 role="menuitem"
                 @click="openProfileEdit"
             >
-                <svg
-                    aria-hidden="true"
-                    class="h-4 w-4"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                >
-                    <path d="M20 21a8 8 0 1 0-16 0" />
-                    <circle cx="12" cy="7" r="4" />
-                </svg>
+                <UserPen class="w-4 h-4" />
                 Editar perfil
             </button>
             <NuxtLink
@@ -53,19 +43,7 @@
                 role="menuitem"
                 @click="accountMenuOpen = false"
             >
-                <svg
-                    aria-hidden="true"
-                    class="h-4 w-4"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                >
-                    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-                    <circle cx="9" cy="7" r="4" />
-                    <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
-                    <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-                </svg>
+                <Users class="w-4 h-4" />
                 Usuarios
             </NuxtLink>
             <NuxtLink
@@ -75,17 +53,7 @@
                 role="menuitem"
                 @click="accountMenuOpen = false"
             >
-                <svg
-                    aria-hidden="true"
-                    class="h-4 w-4"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                >
-                    <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.09a2 2 0 0 1-1-1.74v-.51a2 2 0 0 1 1-1.72l.15-.1a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2Z" />
-                    <circle cx="12" cy="12" r="3" />
-                </svg>
+                <Settings  class="w-4 h-4" />
                 Configuracion
             </NuxtLink>
             <button
@@ -95,18 +63,7 @@
                 role="menuitem"
                 @click="handleLogout"
             >
-                <svg
-                    aria-hidden="true"
-                    class="h-4 w-4"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                >
-                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                    <path d="m16 17 5-5-5-5" />
-                    <path d="M21 12H9" />
-                </svg>
+                <LogOut class="w-4 h-4" />     
                 {{ authLoading ? "Saliendo..." : "Salir" }}
             </button>
         </div>
@@ -187,6 +144,8 @@
 </template>
 
 <script setup lang="ts">
+import { Settings, UserPen, Users, LogOut } from '@lucide/vue';
+
 const accountMenuOpen = ref(false);
 const showProfileModal = ref(false);
 const profileName = ref("");

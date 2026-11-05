@@ -1,7 +1,7 @@
 <template>
     <section class="glass-card overflow-hidden">
         <div class="border-b border-white/[0.06] px-4 py-4 sm:px-6">
-            <div class="flex items-center justify-between gap-4">
+            <div class="flex flex-wrap items-center justify-between gap-4">
                 <div>
                     <p class="text-xs font-mono uppercase tracking-wider text-acid-400 mb-1">
                         Acceso
@@ -10,19 +10,29 @@
                         Usuarios
                     </h2>
                 </div>
-                <span class="label-badge bg-acid-400/15 text-acid-400">
-                    {{ users.length }} registros
-                </span>
+                <div class="flex items-center gap-3">
+                    <span class="label-badge bg-acid-400/15 text-acid-400">
+                        {{ users.length }} registros
+                    </span>
+                    <button
+                        type="button"
+                        class="btn-primary h-9 px-3 text-xs flex items-center gap-1.5"
+                        @click="openCreate"
+                    >
+                        <span class="text-sm leading-none">+</span>
+                        <span>Nuevo usuario</span>
+                    </button>
+                </div>
             </div>
+
+            <p
+                v-if="panelSuccessMessage"
+                class="mt-4 rounded-xl border border-emerald-400/20 bg-emerald-400/10 px-4 py-3 text-xs text-emerald-400"
+            >
+                {{ panelSuccessMessage }}
+            </p>
         </div>
-        <div class="relative h-[320px] w-full">
-            <Line
-                :data="chartData"
-                :options="chartOptions"
-                aria-label="Monthly revenue line chart"
-                role="img"
-            />
-        </div>
+
         <div class="hidden md:block overflow-x-auto">
             <table class="w-full">
                 <thead>
@@ -145,6 +155,176 @@
         </div>
     </section>
 
+    <!-- Create / Invite User Modal -->
+    <Teleport to="body">
+        <Transition name="modal">
+            <div
+                v-if="creatingUser"
+                class="fixed inset-0 z-50 flex items-center justify-center p-4"
+                @click.self="closeCreate"
+            >
+                <div class="absolute inset-0 bg-black/70 backdrop-blur-sm"></div>
+                <div class="relative glass-card z-10 w-full max-w-md p-6">
+                    <div class="mb-5">
+                        <p class="text-xs font-mono uppercase tracking-wider text-acid-400 mb-1">
+                            Nuevo acceso
+                        </p>
+                        <h2 class="section-title text-xl">
+                            {{
+                                createForm.mode === "invite"
+                                    ? "Invitar usuario por correo"
+                                    : "Crear usuario"
+                            }}
+                        </h2>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2 p-1 rounded-xl bg-white/[0.04] border border-white/[0.06] mb-5">
+                        <button
+                            type="button"
+                            class="h-9 rounded-lg text-xs font-medium transition-colors"
+                            :class="
+                                createForm.mode === 'password'
+                                    ? 'bg-acid-400/20 text-acid-400 border border-acid-400/30'
+                                    : 'text-obsidian-400 hover:text-white'
+                            "
+                            @click="createForm.mode = 'password'"
+                        >
+                            Asignar password
+                        </button>
+                        <button
+                            type="button"
+                            class="h-9 rounded-lg text-xs font-medium transition-colors"
+                            :class="
+                                createForm.mode === 'invite'
+                                    ? 'bg-acid-400/20 text-acid-400 border border-acid-400/30'
+                                    : 'text-obsidian-400 hover:text-white'
+                            "
+                            @click="createForm.mode = 'invite'"
+                        >
+                            Invitar por correo
+                        </button>
+                    </div>
+
+                    <form class="space-y-4" @submit.prevent="handleCreateUser">
+                        <div>
+                            <label class="block text-xs font-mono text-obsidian-400 mb-2">
+                                Nombre
+                            </label>
+                            <input
+                                v-model.trim="createForm.displayName"
+                                class="input-dark"
+                                type="text"
+                                placeholder="Nombre completo"
+                                required
+                            />
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-mono text-obsidian-400 mb-2">
+                                Email
+                            </label>
+                            <input
+                                v-model.trim="createForm.email"
+                                class="input-dark"
+                                type="email"
+                                placeholder="correo@empresa.com"
+                                required
+                            />
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-mono text-obsidian-400 mb-2">
+                                Rol
+                            </label>
+                            <select v-model="createForm.roleId" class="input-dark">
+                                <option value="">Sin rol</option>
+                                <option
+                                    v-for="role in roles"
+                                    :key="role.id"
+                                    :value="role.id"
+                                >
+                                    {{ role.name }}
+                                </option>
+                            </select>
+                        </div>
+
+                        <div v-if="createForm.mode === 'password'">
+                            <div class="flex items-center justify-between gap-3 mb-2">
+                                <label class="block text-xs font-mono text-obsidian-400">
+                                    Password inicial
+                                </label>
+                                <button
+                                    type="button"
+                                    class="text-xs text-obsidian-400 hover:text-white transition-colors"
+                                    @click="showCreatePassword = !showCreatePassword"
+                                >
+                                    {{ showCreatePassword ? "Ocultar" : "Mostrar" }}
+                                </button>
+                            </div>
+                            <input
+                                v-model="createForm.password"
+                                class="input-dark"
+                                :type="showCreatePassword ? 'text' : 'password'"
+                                autocomplete="new-password"
+                                placeholder="Minimo 6 caracteres"
+                            />
+                        </div>
+                        <p
+                            v-else
+                            class="rounded-xl border border-white/[0.06] bg-white/[0.02] px-3.5 py-2.5 text-xs text-obsidian-400"
+                        >
+                            Se enviara un correo de invitacion para que el usuario configure su propio password e ingrese a la plataforma.
+                        </p>
+
+                        <div>
+                            <label class="block text-xs font-mono text-obsidian-400 mb-2">
+                                Estado
+                            </label>
+                            <select v-model="createForm.status" class="input-dark">
+                                <option value="active">Activo</option>
+                                <option value="inactive">Inactivo</option>
+                            </select>
+                        </div>
+
+                        <p
+                            v-if="createFormError"
+                            class="rounded-xl border border-coral-400/20 bg-coral-400/10 px-4 py-3 text-sm text-coral-400"
+                        >
+                            {{ createFormError }}
+                        </p>
+
+                        <div class="flex gap-3 pt-2">
+                            <button
+                                type="button"
+                                class="btn-ghost flex-1"
+                                :disabled="creating"
+                                @click="closeCreate"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                type="submit"
+                                class="btn-primary flex-1"
+                                :disabled="creating"
+                            >
+                                {{
+                                    creating
+                                        ? createForm.mode === "invite"
+                                            ? "Enviando..."
+                                            : "Creando..."
+                                        : createForm.mode === "invite"
+                                          ? "Enviar invitacion"
+                                          : "Crear usuario"
+                                }}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </Transition>
+    </Teleport>
+
+    <!-- Edit User Modal -->
     <Teleport to="body">
         <Transition name="modal">
             <div
@@ -198,8 +378,8 @@
                                 Estado
                             </label>
                             <select v-model="form.status" class="input-dark">
-                                <option value="active">active</option>
-                                <option value="inactive">inactive</option>
+                                <option value="active">Activo</option>
+                                <option value="inactive">Inactivo</option>
                             </select>
                         </div>
 
@@ -229,6 +409,7 @@
         </Transition>
     </Teleport>
 
+    <!-- Delete User Modal -->
     <Teleport to="body">
         <Transition name="modal">
             <div
@@ -260,7 +441,6 @@
                         </button>
                     </div>
                 </div>
-                
             </div>
         </Transition>
     </Teleport>
@@ -269,140 +449,31 @@
 <script setup lang="ts">
 import type { AppUser } from "~/composables/useUsers";
 
-import {
-  Chart as ChartJS,
-  Title,
-  Tooltip,
-  Legend,
-  LineElement,
-  PointElement,
-  CategoryScale,
-  LinearScale,
-  Filler,
-} from 'chart.js'
-import { Line } from 'vue-chartjs'
-
-ChartJS.register(
-  Title,
-  Tooltip,
-  Legend,
-  LineElement,
-  PointElement,
-  CategoryScale,
-  LinearScale,
-  Filler,
-)
-
-// Chart data
-const chartData = {
-    labels: [
-        'January',
-        'February',
-        'March',
-        'April',
-        'May',
-        'June',
-        'July',
-    ],
-    datasets: [
-        {
-            label: 'Revenue',
-            data: [1200, 1900, 1500, 2500, 2200, 3100, 2800],
-
-            // Line styling
-            borderColor: '#6366F1',
-            borderWidth: 3,
-            tension: 0.3,
-            fill: true,
-            backgroundColor: 'rgba(99, 102, 241, 0.10)',
-
-            // Point styling
-            pointStyle: 'circle' as const,
-            pointRadius: 5,
-            pointHoverRadius: 9,
-            pointBackgroundColor: '#FFFFFF',
-            pointBorderColor: '#6366F1',
-            pointBorderWidth: 2,
-            pointHoverBackgroundColor: '#6366F1',
-            pointHoverBorderColor: '#FFFFFF',
-            pointHoverBorderWidth: 2,
-        },
-    ],
-}
-
-// Chart configuration
-const chartOptions = {
-  responsive: true,
-  maintainAspectRatio: false,
-
-  interaction: {
-    intersect: false,
-    mode: 'index' as const,
-  },
-
-  plugins: {
-    legend: {
-        display: true,
-        position: 'top' as const,
-        align: 'end' as const,
-        labels: {
-            usePointStyle: true,
-            padding: 20,
-        },
-    },
-
-    tooltip: {
-        enabled: true,
-        backgroundColor: '#18181B',
-        padding: 12,
-        displayColors: false,
-        callbacks: {
-            label: (context: { parsed: { y: number | null } }) =>
-            `Revenue: $${(context.parsed.y ?? 0).toLocaleString('en-US')}`,
-        },
-    },
-  },
-
-  scales: {
-    x: {
-      grid: {
-        display: false,
-      },
-      border: {
-        display: false,
-      },
-      ticks: {
-        color: '#71717A',
-      },
-    },
-
-    y: {
-      beginAtZero: true,
-      border: {
-        display: false,
-        dash: [4, 4],
-      },
-      grid: {
-        color: '#E4E4E7',
-      },
-      ticks: {
-        color: '#71717A',
-        callback: (value: string | number) =>
-          `$${Number(value).toLocaleString('en-US')}`,
-      },
-    },
-  },
-}
-
 const {
     users,
     loading,
     error,
     loadUsers,
+    createUser,
     updateUser,
     deleteUserProfile,
 } = useUsers();
 const { roles, loadRoles } = useRoles();
+
+const creatingUser = ref(false);
+const creating = ref(false);
+const showCreatePassword = ref(false);
+const createFormError = ref("");
+const panelSuccessMessage = ref("");
+
+const createForm = reactive({
+    mode: "password" as "password" | "invite",
+    displayName: "",
+    email: "",
+    roleId: "3",
+    password: "",
+    status: "active" as "active" | "inactive",
+});
 
 const editingUser = ref<AppUser | null>(null);
 const deletingUser = ref<AppUser | null>(null);
@@ -425,7 +496,76 @@ const selectedRoleName = computed(
     () => roles.value.find((role) => role.id === form.roleId)?.name || "",
 );
 
+const openCreate = () => {
+    panelSuccessMessage.value = "";
+    createFormError.value = "";
+    showCreatePassword.value = false;
+    createForm.mode = "password";
+    createForm.displayName = "";
+    createForm.email = "";
+    createForm.roleId = roles.value.find((r) => r.id === "3")?.id || roles.value[0]?.id || "";
+    createForm.password = "";
+    createForm.status = "active";
+    creatingUser.value = true;
+};
+
+const closeCreate = () => {
+    creatingUser.value = false;
+    createFormError.value = "";
+};
+
+const handleCreateUser = async () => {
+    createFormError.value = "";
+    panelSuccessMessage.value = "";
+
+    if (!createForm.displayName) {
+        createFormError.value = "Ingresa el nombre del usuario.";
+        return;
+    }
+
+    if (!createForm.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(createForm.email)) {
+        createFormError.value = "Ingresa un correo electronico valido.";
+        return;
+    }
+
+    if (createForm.mode === "password" && createForm.password.length < 6) {
+        createFormError.value = "El password debe tener al menos 6 caracteres.";
+        return;
+    }
+
+    creating.value = true;
+
+    try {
+        await createUser({
+            displayName: createForm.displayName,
+            email: createForm.email,
+            roleId: createForm.roleId,
+            status: createForm.status,
+            mode: createForm.mode,
+            password: createForm.mode === "password" ? createForm.password : undefined,
+        });
+
+        const targetEmail = createForm.email;
+        const usedMode = createForm.mode;
+        closeCreate();
+
+        panelSuccessMessage.value =
+            usedMode === "invite"
+                ? `Invitacion enviada a ${targetEmail} y perfil creado.`
+                : `Usuario ${targetEmail} creado correctamente.`;
+    } catch (err: any) {
+        createFormError.value =
+            err?.data?.statusMessage ||
+            err?.statusMessage ||
+            err?.message ||
+            "No se pudo crear el usuario.";
+    } finally {
+        creating.value = false;
+    }
+};
+
 const openEdit = (appUser: AppUser) => {
+    panelSuccessMessage.value = "";
     editingUser.value = appUser;
     form.displayName = appUser.displayName;
     form.email = appUser.email;
@@ -440,6 +580,7 @@ const closeEdit = () => {
 };
 
 const confirmDelete = (appUser: AppUser) => {
+    panelSuccessMessage.value = "";
     deletingUser.value = appUser;
 };
 
@@ -458,6 +599,7 @@ const handleSaveUser = async () => {
             status: form.status,
         });
         closeEdit();
+        panelSuccessMessage.value = "Usuario actualizado correctamente.";
     } catch {
         formError.value = "No se pudo guardar el usuario.";
     } finally {
@@ -473,6 +615,7 @@ const handleDelete = async () => {
     try {
         await deleteUserProfile(deletingUser.value.uid);
         deletingUser.value = null;
+        panelSuccessMessage.value = "Usuario eliminado correctamente.";
     } finally {
         deleting.value = false;
     }

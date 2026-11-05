@@ -89,11 +89,28 @@ export const useAuth = () => {
 
         try {
             const { error: authError } = await client.auth.resetPasswordForEmail(emailVal, {
-                redirectTo: `${window.location.origin}/login`,
+                redirectTo: `${window.location.origin}/login?setup_password=1`,
             });
             if (authError) throw authError;
         } catch (authError: any) {
             error.value = authError.message || "No se pudo enviar el correo de recuperacion.";
+            throw authError;
+        } finally {
+            loading.value = false;
+        }
+    };
+
+    const updatePassword = async (newPassword: string) => {
+        loading.value = true;
+        error.value = null;
+
+        try {
+            const { error: authError } = await client.auth.updateUser({
+                password: newPassword,
+            });
+            if (authError) throw authError;
+        } catch (authError: any) {
+            error.value = authError.message || "No se pudo actualizar el password.";
             throw authError;
         } finally {
             loading.value = false;
@@ -129,6 +146,7 @@ export const useAuth = () => {
         login,
         register,
         resetPassword,
+        updatePassword,
         logout,
     };
 };

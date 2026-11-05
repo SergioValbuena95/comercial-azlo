@@ -114,10 +114,16 @@ export default defineNuxtConfig({
     // @ts-ignore
     supabase: {
         redirect: false,
+        serviceKey:
+            process.env.SUPABASE_SERVICE_ROLE_KEY ||
+            process.env.SUPABASE_SERVICE_KEY,
     },
 
     runtimeConfig: {
         resendApiKey: process.env.RESEND_API_KEY,
+        supabaseServiceRoleKey:
+            process.env.SUPABASE_SERVICE_ROLE_KEY ||
+            process.env.SUPABASE_SERVICE_KEY,
         public: {},
     },
 });

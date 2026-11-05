@@ -22,26 +22,36 @@
             <section class="glass-card p-6 sm:p-8">
                 <div class="mb-7">
                     <p class="text-xs font-mono uppercase tracking-wider text-acid-400 mb-2">
-                        {{ isRegisterMode ? "Crear cuenta" : "Iniciar sesion" }}
+                        {{
+                            isSetupPasswordMode
+                                ? "Activacion de cuenta"
+                                : isRegisterMode
+                                  ? "Crear cuenta"
+                                  : "Iniciar sesion"
+                        }}
                     </p>
                     <h1 class="section-title text-2xl">
                         {{
-                            isRegisterMode
-                                ? "Registra tu acceso"
-                                : "Entra al dashboard"
+                            isSetupPasswordMode
+                                ? "Configura tu password"
+                                : isRegisterMode
+                                  ? "Registra tu acceso"
+                                  : "Entra al dashboard"
                         }}
                     </h1>
                     <p class="text-obsidian-500 text-sm mt-2">
                         {{
-                            isRegisterMode
-                                ? "Crea una cuenta con tu correo corporativo."
-                                : "Usa tu correo corporativo para acceder al seguimiento comercial."
+                            isSetupPasswordMode
+                                ? "Define tu password para completar el acceso a tu cuenta."
+                                : isRegisterMode
+                                  ? "Crea una cuenta con tu correo corporativo."
+                                  : "Usa tu correo corporativo para acceder al seguimiento comercial."
                         }}
                     </p>
                 </div>
 
                 <form class="space-y-5" @submit.prevent="handleSubmit">
-                    <div>
+                    <div v-if="!isSetupPasswordMode">
                         <label for="email" class="block text-xs font-mono text-obsidian-400 mb-2">
                             Correo
                         </label>
@@ -62,7 +72,7 @@
                     <div>
                         <div class="flex items-center justify-between gap-3 mb-2">
                             <label for="password" class="block text-xs font-mono text-obsidian-400">
-                                Password
+                                {{ isSetupPasswordMode ? "Nuevo password" : "Password" }}
                             </label>
                             <button
                                 type="button"
@@ -77,14 +87,14 @@
                             v-model="password"
                             class="input-dark"
                             :type="showPassword ? 'text' : 'password'"
-                            autocomplete="current-password"
+                            :autocomplete="isSetupPasswordMode ? 'new-password' : 'current-password'"
                             placeholder="Tu password"
                             :aria-invalid="Boolean(passwordError)"
                         />
                         <p v-if="passwordError" class="mt-2 text-xs text-coral-400">
                             {{ passwordError }}
                         </p>
-                        <div v-if="!isRegisterMode" class="mt-3 text-right">
+                        <div v-if="!isRegisterMode && !isSetupPasswordMode" class="mt-3 text-right">
                             <button
                                 type="button"
                                 class="text-xs font-medium text-acid-400 hover:text-acid-300 transition-colors"
@@ -100,7 +110,7 @@
                         </div>
                     </div>
 
-                    <div v-if="isRegisterMode">
+                    <div v-if="isRegisterMode || isSetupPasswordMode">
                         <label
                             for="confirm-password"
                             class="block text-xs font-mono text-obsidian-400 mb-2"
@@ -111,7 +121,7 @@
                             id="confirm-password"
                             v-model="confirmPassword"
                             class="input-dark"
-                            type="password"
+                            :type="showPassword ? 'text' : 'password'"
                             autocomplete="new-password"
                             placeholder="Repite tu password"
                             :aria-invalid="Boolean(confirmPasswordError)"
@@ -144,24 +154,13 @@
                         {{
                             submitting
                                 ? "Validando..."
-                                : isRegisterMode
-                                  ? "Crear cuenta"
-                                  : "Ingresar"
+                                : isSetupPasswordMode
+                                  ? "Guardar password y entrar"
+                                  : isRegisterMode
+                                    ? "Crear cuenta"
+                                    : "Ingresar"
                         }}
                     </button>
-
-                    <!-- <button
-                        type="button"
-                        class="btn-ghost w-full h-11"
-                        :disabled="submitting || resettingPassword"
-                        @click="toggleMode"
-                    >
-                        {{
-                            isRegisterMode
-                                ? "Ya tengo cuenta"
-                                : "Crear una cuenta"
-                        }}
-                    </button> -->
                 </form>
             </section>
         </main>
@@ -173,6 +172,7 @@ const email = ref("");
 const password = ref("");
 const confirmPassword = ref("");
 const isRegisterMode = ref(false);
+const isSetupPasswordMode = ref(false);
 const showPassword = ref(false);
 const submitting = ref(false);
 const resettingPassword = ref(false);
@@ -190,11 +190,20 @@ const {
     login,
     register,
     resetPassword,
+    updatePassword,
 } = useAuth();
 
 onMounted(() => {
     initTheme();
     initAuth();
+
+    if (
+        route.query.setup_password === "1" ||
+        window.location.hash.includes("type=invite") ||
+        window.location.hash.includes("type=recovery")
+    ) {
+        isSetupPasswordMode.value = true;
+    }
 
     if (route.query.verified === "1") {
         messageType.value = "success";
@@ -210,10 +219,12 @@ const validateForm = () => {
     formMessage.value = "";
     messageType.value = "error";
 
-    if (!email.value) {
-        emailError.value = "Ingresa tu correo.";
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value)) {
-        emailError.value = "Ingresa un correo valido.";
+    if (!isSetupPasswordMode.value) {
+        if (!email.value) {
+            emailError.value = "Ingresa tu correo.";
+        } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value)) {
+            emailError.value = "Ingresa un correo valido.";
+        }
     }
 
     if (!password.value) {
@@ -222,7 +233,7 @@ const validateForm = () => {
         passwordError.value = "El password debe tener al menos 6 caracteres.";
     }
 
-    if (isRegisterMode.value) {
+    if (isRegisterMode.value || isSetupPasswordMode.value) {
         if (!confirmPassword.value) {
             confirmPasswordError.value = "Confirma tu password.";
         } else if (confirmPassword.value !== password.value) {
@@ -243,6 +254,12 @@ const handleSubmit = async () => {
     submitting.value = true;
 
     try {
+        if (isSetupPasswordMode.value) {
+            await updatePassword(password.value);
+            await navigateTo("/");
+            return;
+        }
+
         if (isRegisterMode.value) {
             await register(email.value, password.value);
             isRegisterMode.value = false;
@@ -259,7 +276,10 @@ const handleSubmit = async () => {
     } catch {
         messageType.value = "error";
         formMessage.value =
-            authError.value || "No se pudo iniciar sesion.";
+            authError.value ||
+            (isSetupPasswordMode.value
+                ? "No se pudo guardar el password."
+                : "No se pudo iniciar sesion.");
     } finally {
         submitting.value = false;
     }
@@ -296,16 +316,5 @@ const handlePasswordReset = async () => {
     } finally {
         resettingPassword.value = false;
     }
-};
-
-const toggleMode = () => {
-    isRegisterMode.value = !isRegisterMode.value;
-    password.value = "";
-    confirmPassword.value = "";
-    emailError.value = "";
-    passwordError.value = "";
-    confirmPasswordError.value = "";
-    formMessage.value = "";
-    messageType.value = "error";
 };
 </script>

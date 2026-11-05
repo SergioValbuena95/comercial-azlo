@@ -54,7 +54,7 @@
             </div>
         </div>
         <!-- filters tabs -->
-        <div v-if="!isProductionUser(currentUserProfile)" class="flex flex-wrap items-center gap-2 mb-4">
+        <div v-if="canSeeMainDashboard(currentUserProfile)" class="flex flex-wrap items-center gap-2 mb-4">
             <button
                 v-for="tab in projectTabsMain"
                 :key="tab.key"
@@ -455,8 +455,6 @@
                             </td>
                             <!-- estado instalacion -->
                             <td v-if="isInstalationUser(currentUserProfile)" class="px-4 py-3.5">
-                                {{ project.estado }}
-                                {{ isProductionUser(currentUserProfile) }}
                                 <StatusBadge
                                     estado="Pintura"
                                     :editable="!isComercialUser(currentUserProfile)"
@@ -557,6 +555,7 @@ const {
     isComercialUser,
     isProductionUser,
     isInstalationUser,
+    canSeeMainDashboard
 } = useAccess();
 
 const filterStatus = ref("");
@@ -675,7 +674,9 @@ const subStateProductionOptions = ref(
 
 const userProjects = computed(() => {
     let list = [...props.projects];
-    if (!isAdminUser(currentUserProfile.value)) {
+    if (isProductionUser(currentUserProfile.value)) {
+        list = list.filter(isSoldProject);
+    } else if (!isAdminUser(currentUserProfile.value)) {
         const myUid = currentUserProfile.value?.id;
         if (myUid) {
             list = list.filter(

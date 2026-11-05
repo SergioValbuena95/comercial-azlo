@@ -247,7 +247,7 @@ export function useProjects() {
 
             const { user, initAuth } = useAuth();
             const { currentUserProfile, loadCurrentUserProfile } = useUsers();
-            const { getIsAdminUser } = useAccess();
+            const { getIsAdminUser, getIsProductionUser, getIsInstalationUser } = useAccess();
             await initAuth();
 
             if (user.value) {
@@ -259,7 +259,9 @@ export function useProjects() {
 
                 let query = client.from("projects").select("*").is("deleted_at", null);
 
-                if (!canSeeAllProjects && profile) {
+                if (await getIsProductionUser(profile) || await getIsInstalationUser(profile)) {
+                    query = query.eq("state", PROJECT_STATES.SOLD.id);
+                } else if (!canSeeAllProjects && profile) {
                     query = query.eq("reponsible_id", Number(profile.id));
                 }
 

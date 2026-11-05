@@ -17,6 +17,15 @@ export interface UserUpdateInput {
     status: string;
 }
 
+export interface UserCreateInput {
+    displayName: string;
+    email: string;
+    roleId: string;
+    status: "active" | "inactive";
+    mode: "password" | "invite";
+    password?: string;
+}
+
 const normalizeUser = (row: any): AppUser => {
     let roleNameVal = "";
     const rolesData = row.roles || row.role;
@@ -32,8 +41,11 @@ const normalizeUser = (row: any): AppUser => {
     // Static fallback if the join is blocked or empty
     if (!roleNameVal && row.role_id) {
         const idStr = String(row.role_id);
-        if (idStr === "1") roleNameVal = "Administrador";
-        else if (idStr === "2") roleNameVal = "Vendedor";
+        if (idStr === "1") roleNameVal = "SuperAdmin";
+        else if (idStr === "2") roleNameVal = "Admin";
+        else if (idStr === "3") roleNameVal = "Comercial";
+        else if (idStr === "4") roleNameVal = "Produccion";
+        else if (idStr === "5") roleNameVal = "Instalacion";
     }
 
     return {
@@ -77,7 +89,7 @@ export function useUsers() {
         }
     };
 
-let profileLoadingPromise: Promise<void> | null = null;
+    let profileLoadingPromise: Promise<void> | null = null;
 
     const loadCurrentUserProfile = async () => {
         if (profileLoadingPromise) return profileLoadingPromise;
@@ -120,7 +132,6 @@ let profileLoadingPromise: Promise<void> | null = null;
     };
 
     const getUser = async (uid: string) => {
-
         try {
             const { data, error: err } = await client
                 .from("users")
@@ -137,6 +148,33 @@ let profileLoadingPromise: Promise<void> | null = null;
             error.value = "No se pudo cargar el usuario.";
             return null;
         }
+    };
+
+    const createUser = async (input: UserCreateInput) => {
+        const redirectTo =
+            typeof window !== "undefined"
+                ? `${window.location.origin}/login?setup_password=1`
+                : undefined;
+
+        const response = await $fetch<{
+            success: boolean;
+            mode: "password" | "invite";
+            user: any;
+        }>("/api/users/create", {
+            method: "POST",
+            body: {
+                displayName: input.displayName,
+                email: input.email,
+                roleId: input.roleId,
+                status: input.status,
+                mode: input.mode,
+                password: input.password,
+                redirectTo,
+            },
+        });
+
+        await loadUsers();
+        return response.user ? normalizeUser(response.user) : null;
     };
 
     const updateCurrentUserProfile = async (
@@ -183,6 +221,7 @@ let profileLoadingPromise: Promise<void> | null = null;
                 .eq("id", Number(uid));
 
             if (err) throw err;
+            await loadUsers();
         } catch (err) {
             console.error(err);
             error.value = "No se pudo actualizar el usuario.";
@@ -198,6 +237,7 @@ let profileLoadingPromise: Promise<void> | null = null;
                 .eq("id", Number(uid));
 
             if (err) throw err;
+            await loadUsers();
         } catch (err) {
             console.error(err);
             error.value = "No se pudo eliminar el usuario.";
@@ -213,6 +253,7 @@ let profileLoadingPromise: Promise<void> | null = null;
         loadUsers,
         loadCurrentUserProfile,
         getUser,
+        createUser,
         updateCurrentUserProfile,
         updateUser,
         deleteUserProfile,

@@ -22,7 +22,6 @@ export function useRoles() {
             const { data, error: err } = await client
                 .from("roles")
                 .select("*")
-                .order("name", { ascending: true });
 
             if (err) throw err;
 

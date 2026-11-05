@@ -33,7 +33,7 @@
                         </div>
                         <ThemeToggle />
                         <button
-                            v-if="!isProductionUser(currentUserProfile)"
+                            v-if="canSeeMainDashboard(currentUserProfile)"
                             @click="openCreate"
                             class="btn-primary flex items-center gap-2 h-9"
                         >
@@ -53,14 +53,14 @@
                 <HeroInfoTop />
                 <!-- KPI Grid -->
                 <KpiGrid
-                    v-if="!isProductionUser(currentUserProfile)"
+                    v-if="canSeeMainDashboard(currentUserProfile)"
                     :stats="stats"
                     :total="stats.total"
                     :totalCities="totalCities"
                     :loading="loading"
                 />
                 <!-- KPI Grid -->
-                <div v-if="!isProductionUser(currentUserProfile)" class="grid grid-cols-2 lg:grid-cols-3 gap-4">
+                <div v-if="canSeeMainDashboard(currentUserProfile)" class="grid grid-cols-2 lg:grid-cols-3 gap-4">
                     <StatCard
                         class="col-span-2 lg:col-span-1"
                         label="Total Vendido"
@@ -86,13 +86,15 @@
                     <div class="glass-card calendar-card p-4">
                         <div>
                             <p>Acciones</p>
-                            <VCalendar
-                                expanded
-                                borderless
-                                transparent
-                                locale="es"
-                                :attributes="projectsCalendar"
-                            />
+                            <ClientOnly>
+                                <VCalendar
+                                    expanded
+                                    borderless
+                                    transparent
+                                    locale="es"
+                                    :attributes="projectsCalendar"
+                                />
+                            </ClientOnly>
                         </div>
                     </div>
                 </div>
@@ -100,7 +102,7 @@
 
             <!-- View Mode Switcher -->
             <ViewToggle
-                v-if="!isProductionUser(currentUserProfile)"
+                v-if="canSeeMainDashboard(currentUserProfile)"
                 v-model="currentView"
                 :options="viewOptions"
                 @change="handleViewChange"
@@ -273,7 +275,9 @@ const {
 const {
     isAdminUser,
     isComercialUser,
-    isProductionUser
+    isProductionUser,
+    isInstalationUser,
+    canSeeMainDashboard
 } = useAccess();
 import { ref } from 'vue';
 import { Table, SquareKanban } from '@lucide/vue';

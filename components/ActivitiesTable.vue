@@ -182,13 +182,15 @@
 
             <div class="glass-card calendar-card p-4">
                 <div>
-                    <VCalendar
-                        expanded
-                        borderless
-                        transparent
-                        locale="es"
-                        :attributes="projectsCalendar"
-                    />
+                    <ClientOnly>
+                        <VCalendar
+                            expanded
+                            borderless
+                            transparent
+                            locale="es"
+                            :attributes="projectsCalendar"
+                        />
+                    </ClientOnly>
                 </div>
             </div>
         </section>

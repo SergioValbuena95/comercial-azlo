@@ -45,8 +45,6 @@ export function useAccess() {
         appUser?: Pick<AppUser, "roleId"> | null,
     ) => isProductionUser(appUser);
 
-    // +
-
     const isInstalationUser = (
         appUser?: Pick<AppUser, "roleId"> | null,
     ) => {
@@ -60,9 +58,16 @@ export function useAccess() {
         appUser?: Pick<AppUser, "roleId"> | null,
     ) => isInstalationUser(appUser);
 
+    const canSeeMainDashboard = (
+        appUser?: Pick<AppUser, "roleId"> | null,
+    ) => {
+        if (!appUser) return false;
+        return !isProductionUser(appUser) && !isInstalationUser(appUser);
+    };
 
-
-
+    const getCanSeeMainDashboard = async (
+        appUser?: Pick<AppUser, "roleId"> | null,
+    ) => canSeeMainDashboard(appUser);
 
     return {
         isAdminUser,
@@ -73,5 +78,7 @@ export function useAccess() {
         getIsProductionUser,
         isInstalationUser,
         getIsInstalationUser,
+        canSeeMainDashboard,
+        getCanSeeMainDashboard,
     };
 }
